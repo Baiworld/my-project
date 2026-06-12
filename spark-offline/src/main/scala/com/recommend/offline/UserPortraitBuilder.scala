@@ -115,9 +115,12 @@ object UserPortraitBuilder {
       )
     }.toDF()
 
-    // 写入离线用户画像表
+    // 清空旧数据后写入
+    val conn = java.sql.DriverManager.getConnection(jdbcUrl, dbProps)
+    conn.createStatement().execute("TRUNCATE TABLE offline_user_portrait")
+    conn.close()
     portraitDF.write
-      .mode(SaveMode.Overwrite)
+      .mode(SaveMode.Append)
       .jdbc(jdbcUrl, "offline_user_portrait", dbProps)
 
     println(s"[用户画像] 写入 ${portraitDF.count()} 条用户全量画像")

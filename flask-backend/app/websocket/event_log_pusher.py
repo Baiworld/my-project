@@ -97,12 +97,6 @@ def _event_loop(interval: float = 2.0):
             time.sleep(interval)
 
 
-def _on_client_connect():
-    """Send cached recent events to newly connected client."""
-    for event in _recent_events:
-        socketio.emit("user_event", event, to=None)
-
-
 def start_event_push(app, interval: float = 2.0):
     global _push_running, _push_thread, _app
     if _push_running:
@@ -139,7 +133,11 @@ def push_batch_events(events: list[dict]):
         push_event_log(event)
 
 
-def send_cached_events():
-    """Send cached events to all clients (called when a new client connects)."""
+def send_cached_events(sid: str = None):
+    """Send cached events to a specific client (called when a new client connects).
+
+    If sid is provided, events are sent only to that client.
+    If sid is None, sends to all (backward compatible).
+    """
     for event in _recent_events:
-        socketio.emit("user_event", event)
+        socketio.emit("user_event", event, to=sid)

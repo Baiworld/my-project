@@ -128,8 +128,11 @@ object HybridRecommender {
 
     // 7. 写入 MySQL
     val recDF = spark.sparkContext.parallelize(recommendations).toDF()
+    val connRec = java.sql.DriverManager.getConnection(jdbcUrl, dbProps)
+    connRec.createStatement().execute("TRUNCATE TABLE offline_recommendations")
+    connRec.close()
     recDF.write
-      .mode(SaveMode.Overwrite)
+      .mode(SaveMode.Append)
       .jdbc(jdbcUrl, "offline_recommendations", dbProps)
 
     println(s"[推荐引擎] 写入 ${recommendations.size} 条推荐结果")

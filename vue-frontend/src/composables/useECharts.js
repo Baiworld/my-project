@@ -1,12 +1,11 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import * as echarts from "echarts";
 
-const CHART_THEME = {
-  // Custom ECharts theme — dark background with brand colors
-};
+const CHART_THEME = {};
 
 export function useECharts(chartRef) {
   const chartInstance = ref(null);
+  let resizeObserver = null;
 
   function initChart() {
     if (chartRef.value) {
@@ -22,15 +21,18 @@ export function useECharts(chartRef) {
     chartInstance.value?.resize();
   }
 
-  onMounted(() => initChart());
-  onUnmounted(() => chartInstance.value?.dispose());
-
-  // Auto-resize on window resize
-  const resizeObserver = new ResizeObserver(() => resize());
   onMounted(() => {
-    if (chartRef.value) resizeObserver.observe(chartRef.value);
+    initChart();
+    if (chartRef.value) {
+      resizeObserver = new ResizeObserver(() => resize());
+      resizeObserver.observe(chartRef.value);
+    }
   });
-  onUnmounted(() => resizeObserver.disconnect());
+
+  onUnmounted(() => {
+    resizeObserver?.disconnect();
+    chartInstance.value?.dispose();
+  });
 
   return { chartInstance, setOption, resize };
 }

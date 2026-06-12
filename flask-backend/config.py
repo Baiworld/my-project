@@ -11,7 +11,7 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "mysql+pymysql://app:app123@localhost:3306/recommend_db",
+        "mysql+pymysql://app:app123@192.168.88.134:3306/recommend_db",
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {

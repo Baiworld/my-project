@@ -90,10 +90,10 @@ const iconPaths = {
 }
 .metric-card:hover .card-glow { opacity: 0.22; }
 
-.accent-blue   .card-glow { background: radial-gradient(circle, #6366F1, transparent); }
-.accent-green  .card-glow { background: radial-gradient(circle, #10B981, transparent); }
-.accent-purple .card-glow { background: radial-gradient(circle, #8B5CF6, transparent); }
-.accent-orange .card-glow { background: radial-gradient(circle, #F59E0B, transparent); }
+.accent-blue   .card-glow { background: radial-gradient(circle, var(--color-primary), transparent); }
+.accent-green  .card-glow { background: radial-gradient(circle, var(--color-success), transparent); }
+.accent-purple .card-glow { background: radial-gradient(circle, #C88030, transparent); }
+.accent-orange .card-glow { background: radial-gradient(circle, #E8784A, transparent); }
 
 /* ── Inner layout ── */
 .card-inner {
@@ -110,10 +110,10 @@ const iconPaths = {
 }
 .card-icon svg { width: 22px; height: 22px; }
 
-.accent-blue   .card-icon { background: rgba(99,102,241,0.15);  color: #818CF8; }
-.accent-green  .card-icon { background: rgba(16,185,129,0.15);  color: #34D399; }
-.accent-purple .card-icon { background: rgba(139,92,246,0.15);  color: #A78BFA; }
-.accent-orange .card-icon { background: rgba(245,158,11,0.15);  color: #FBBF24; }
+.accent-blue   .card-icon { background: rgba(232,120,74,0.12);  color: var(--color-primary-dark); }
+.accent-green  .card-icon { background: rgba(45,157,122,0.12);  color: var(--color-success); }
+.accent-purple .card-icon { background: rgba(200,128,48,0.12);  color: #C88030; }
+.accent-orange .card-icon { background: rgba(232,120,74,0.12);  color: #E8784A; }
 
 /* ── Body ── */
 .card-body { flex: 1; min-width: 0; }

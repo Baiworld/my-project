@@ -12,7 +12,6 @@
     <name>Cold-Start Music &amp; Video Hybrid Recommendation System</name>
 
     <modules>
-        <module>kafka-producer</module>
         <module>spark-streaming</module>
         <module>spark-offline</module>
     </modules>

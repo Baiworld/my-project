@@ -42,7 +42,7 @@
           </div>
           <div class="field">
             <label>内容类型</label>
-            <select v-model="queryForm.content_type" class="select-field">
+            <select v-model="queryForm.content_type" class="select-field" aria-label="内容类型">
               <option value="">全部类型</option>
               <option value="music">🎵 音乐</option>
               <option value="video">🎬 视频</option>
@@ -50,11 +50,11 @@
           </div>
           <div class="field">
             <label>页码</label>
-            <input v-model.number="queryForm.page" type="number" min="1" class="input-field" />
+            <input v-model.number="queryForm.page" type="number" min="1" class="input-field" placeholder="页码" aria-label="页码" />
           </div>
           <div class="field">
             <label>每页数量</label>
-            <select v-model.number="queryForm.size" class="select-field">
+            <select v-model.number="queryForm.size" class="select-field" aria-label="每页数量">
               <option :value="10">10 条</option>
               <option :value="20">20 条</option>
               <option :value="50">50 条</option>
@@ -72,7 +72,11 @@
       <div class="results-card surface-card anim-fade-in-up">
         <div class="results-header">
           <h3>查询结果</h3>
-          <span v-if="pagination.total > 0" class="result-count">{{ pagination.total }} 条记录</span>
+          <div class="results-actions" v-if="pagination.total > 0">
+            <span class="result-count">{{ pagination.total }} 条记录</span>
+            <button @click="exportData('csv')" class="btn btn-ghost btn-sm" title="导出 CSV">📄 CSV</button>
+            <button @click="exportData('xlsx')" class="btn btn-ghost btn-sm" title="导出 Excel">📊 Excel</button>
+          </div>
         </div>
 
         <div class="table-wrap">
@@ -206,6 +210,25 @@ function changePage(page) {
   executeQuery();
 }
 
+const exportTableMap = { recommendations: "offline_recommendations", content: "rt_content_hot", coldstart: "rt_coldstart_cluster" };
+
+async function exportData(format) {
+  const table = exportTableMap[activeTab.value] || "recommendations";
+  try {
+    const response = await api.export.download(table, format);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${table}.${format === "excel" ? "xlsx" : "csv"}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error("导出失败:", e);
+  }
+}
+
 function goBack() {
   router.push("/dashboard");
 }
@@ -274,6 +297,7 @@ function goBack() {
   padding: 18px 20px 0;
 }
 .results-header h3 { font-size: var(--font-size-base); font-weight: 600; }
+.results-actions { display: flex; align-items: center; gap: 8px; }
 .result-count { font-size: var(--font-size-xs); color: var(--text-tertiary); }
 
 .table-wrap { padding: 12px 0 0; overflow-x: auto; }

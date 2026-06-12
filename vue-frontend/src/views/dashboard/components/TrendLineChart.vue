@@ -1,5 +1,5 @@
-<template>
-  <div ref="chartRef" class="w-full h-64"></div>
+﻿<template>
+  <div ref="chartRef" class="chart-box"></div>
 </template>
 
 <script setup>
@@ -14,10 +14,11 @@ const chartRef = ref(null);
 let chartInstance = null;
 
 function initChart() {
-  if (!chartRef.value) return;
+  if (!chartRef.value || !props.data.length) return;
 
+  if (chartInstance) chartInstance.dispose();
   chartInstance = echarts.init(chartRef.value);
-  
+
   const option = {
     backgroundColor: "transparent",
     grid: {
@@ -28,21 +29,21 @@ function initChart() {
     },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      borderColor: "#374151",
+      backgroundColor: "rgba(60, 40, 30, 0.9)",
+      borderColor: "#D8C0B0",
       textStyle: { color: "#fff" },
     },
     xAxis: {
       type: "category",
       data: props.data.map((d) => d.date),
-      axisLine: { lineStyle: { color: "#4B5563" } },
-      axisLabel: { color: "#9CA3AF", fontSize: 10 },
+      axisLine: { lineStyle: { color: "#C8B0A0" } },
+      axisLabel: { color: "#8B7268", fontSize: 10 },
     },
     yAxis: {
       type: "value",
-      axisLine: { lineStyle: { color: "#4B5563" } },
-      axisLabel: { color: "#9CA3AF", fontSize: 10 },
-      splitLine: { lineStyle: { color: "#374151" } },
+      axisLine: { lineStyle: { color: "#C8B0A0" } },
+      axisLabel: { color: "#8B7268", fontSize: 10 },
+      splitLine: { lineStyle: { color: "#D8C0B0" } },
     },
     series: [
       {
@@ -50,16 +51,16 @@ function initChart() {
         type: "line",
         smooth: true,
         data: props.data.map((d) => d.value),
-        lineStyle: { color: "#3B82F6", width: 3 },
+        lineStyle: { color: "#E8784A", width: 3 },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: "rgba(59, 130, 246, 0.4)" },
-            { offset: 1, color: "rgba(59, 130, 246, 0)" },
+            { offset: 0, color: "rgba(232,120,74,0.4)" },
+            { offset: 1, color: "rgba(232,120,74,0.05)" },
           ]),
         },
         symbol: "circle",
         symbolSize: 6,
-        itemStyle: { color: "#3B82F6" },
+        itemStyle: { color: "#E8784A" },
       },
     ],
   };
@@ -85,3 +86,8 @@ onUnmounted(() => {
   chartInstance?.dispose();
 });
 </script>
+
+<style scoped>
+.chart-box { width: 100%; height: 260px; }
+</style>
+

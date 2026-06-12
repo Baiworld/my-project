@@ -25,24 +25,26 @@ def list_content():
     where = ["1=1"]
     params: dict = {}
     if content_type in ("music", "video"):
-        where.append("content_type = :content_type")
+        where.append("c.content_type = :content_type")
         params["content_type"] = content_type
 
     where_clause = " AND ".join(where)
 
     rows = db.session.execute(
         text(
-            f"SELECT content_id, content_type, hot_score, play_count, like_count, "
-            f"favorite_count, share_count, completion_rate, interaction_rate "
-            f"FROM rt_content_hot "
+            f"SELECT c.content_id, c.content_type, c.hot_score, c.play_count, c.like_count, "
+            f"c.favorite_count, c.share_count, c.completion_rate, c.interaction_rate, "
+            f"COALESCE(m.title, CONCAT(IF(c.content_type='music','音乐','视频'), ' #', c.content_id)) AS title "
+            f"FROM rt_content_hot c "
+            f"LEFT JOIN content_metadata m ON c.content_id = m.content_id AND c.content_type = m.content_type "
             f"WHERE {where_clause} "
-            f"ORDER BY hot_score DESC LIMIT :limit OFFSET :offset"
+            f"ORDER BY c.hot_score DESC LIMIT :limit OFFSET :offset"
         ),
         {**params, "limit": size, "offset": offset},
     ).fetchall()
 
     total = db.session.execute(
-        text(f"SELECT COUNT(*) FROM rt_content_hot WHERE {where_clause}"),
+        text(f"SELECT COUNT(*) FROM rt_content_hot c WHERE {where_clause}"),
         params,
     ).scalar()
 
@@ -50,7 +52,7 @@ def list_content():
     for r in rows:
         result.append({
             "id": r.content_id,
-            "title": f"{'音乐' if r.content_type == 'music' else '视频'} #{r.content_id}",
+            "title": r.title,
             "type": r.content_type,
             "hot_score": float(r.hot_score) if r.hot_score else 0,
             "score": float(r.hot_score) if r.hot_score else 0,
@@ -75,19 +77,24 @@ def get_hot_content():
     top_n = min(max(int(request.args.get("top_n", 10)), 1), 100)
 
     sql = (
-        "SELECT content_id, content_type, play_count, like_count, "
-        "favorite_count, share_count, completion_rate, "
-        "interaction_rate, hot_score "
-        "FROM rt_content_hot "
-        "WHERE window_end = (SELECT MAX(window_end) FROM rt_content_hot)"
+        "SELECT h.content_id, h.content_type, h.play_count, h.like_count, "
+        "h.favorite_count, h.share_count, h.completion_rate, "
+        "h.interaction_rate, h.hot_score, "
+        "COALESCE(m.title, CONCAT(IF(h.content_type='music','音乐','视频'), ' #', h.content_id)) AS title "
+        "FROM rt_content_hot h "
+        "LEFT JOIN content_metadata m ON h.content_id = m.content_id AND h.content_type = m.content_type "
     )
     params: dict = {}
 
+    where = []
     if content_type in ("music", "video"):
-        sql += " AND content_type = :content_type"
+        where.append("h.content_type = :content_type")
         params["content_type"] = content_type
 
-    sql += " ORDER BY hot_score DESC LIMIT :top_n"
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+
+    sql += " ORDER BY h.hot_score DESC LIMIT :top_n"
     params["top_n"] = top_n
 
     rows = db.session.execute(text(sql), params).fetchall()
@@ -97,6 +104,7 @@ def get_hot_content():
         result.append({
             "content_id": c.content_id,
             "content_type": c.content_type,
+            "title": c.title,
             "play_count": c.play_count,
             "like_count": c.like_count,
             "favorite_count": c.favorite_count,
@@ -108,3 +116,37 @@ def get_hot_content():
 
     write_audit("query", "content/hot", {"type": content_type, "top_n": top_n})
     return jsonify({"code": 200, "data": result}), 200
+
+
+@content_bp.route("/content/<int:content_id>", methods=["GET"])
+@require_role("operator", "admin")
+def get_content_detail(content_id):
+    content_type = request.args.get("type")
+    where = ["m.content_id = :content_id"]
+    params = {"content_id": content_id}
+    if content_type in ("music", "video"):
+        where.append("m.content_type = :content_type")
+        params["content_type"] = content_type
+
+    row = db.session.execute(
+        text(
+            "SELECT m.content_id, m.content_type, m.title, m.artist_or_author, "
+            "m.style_or_category, m.tags, m.duration, m.language, m.bpm "
+            "FROM content_metadata m WHERE " + " AND ".join(where) + " LIMIT 1"
+        ), params
+    ).fetchone()
+
+    if not row:
+        return jsonify({"code": 404, "message": "Content not found"}), 404
+
+    return jsonify({"code": 200, "data": {
+        "content_id": row.content_id,
+        "content_type": row.content_type,
+        "title": row.title,
+        "artist_or_author": row.artist_or_author,
+        "style_or_category": row.style_or_category,
+        "tags": row.tags,
+        "duration": float(row.duration) if row.duration else 0,
+        "language": row.language,
+        "bpm": float(row.bpm) if row.bpm else 0,
+    }}), 200

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="log-container">
     <div v-if="logs.length === 0" class="log-empty">
       <svg viewBox="0 0 40 40" fill="none" class="empty-graphic"><rect x="6" y="6" width="28" height="28" rx="3" stroke="currentColor" stroke-width="1.2" opacity="0.4"/><path d="M6 14h28" stroke="currentColor" stroke-width="1.2" opacity="0.4"/></svg>
@@ -79,7 +79,7 @@ function eventClass(type) {
   min-width: 70px;
 }
 .log-user {
-  color: #818CF8;
+  color: #E8784A;
   min-width: 60px;
 }
 .log-event {
@@ -103,3 +103,4 @@ function eventClass(type) {
 .ev-skip     { color: #F87171; }
 .ev-complete { color: #2DD4BF; }
 </style>
+

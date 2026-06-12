@@ -92,25 +92,79 @@
           <div class="settings-grid">
             <div class="field">
               <label>推荐刷新周期（小时）</label>
-              <input v-model.number="settings.refreshInterval" type="number" min="1" class="input-field" />
+              <input v-model.number="settings.refreshInterval" type="number" min="1" class="input-field" aria-label="推荐刷新周期" />
             </div>
             <div class="field">
               <label>推荐数量</label>
-              <input v-model.number="settings.recommendCount" type="number" min="1" class="input-field" />
+              <input v-model.number="settings.recommendCount" type="number" min="1" class="input-field" aria-label="推荐数量" />
             </div>
             <div class="field">
               <label>冷启动聚类数量</label>
-              <input v-model.number="settings.clusterCount" type="number" min="2" class="input-field" />
+              <input v-model.number="settings.clusterCount" type="number" min="2" class="input-field" aria-label="冷启动聚类数量" />
             </div>
             <div class="field">
               <label>音乐 / 视频比例</label>
               <div class="ratio-input">
-                <input v-model.number="settings.musicRatio" type="range" min="0" max="100" class="range-slider" />
+                <input v-model.number="settings.musicRatio" type="range" min="0" max="100" class="range-slider" aria-label="音乐视频比例" />
                 <span class="ratio-value">{{ settings.musicRatio }} : {{ 100 - settings.musicRatio }}</span>
               </div>
             </div>
           </div>
           <button @click="saveSettings" class="btn btn-primary" style="margin-top:20px">保存设置</button>
+        </div>
+      </div>
+
+      <!-- ═══ Audit Logs ═══ -->
+      <div v-if="activeTab === 'audit'" class="audit-panel anim-fade-in-up">
+        <div class="surface-card" style="padding:24px">
+          <h3 style="font-size:16px;font-weight:600;margin-bottom:16px">操作审计记录</h3>
+          <div class="audit-filters">
+            <div class="field" style="flex:1">
+              <label>操作类型</label>
+              <select v-model="auditFilter.action" @change="loadAuditLogs(1)" class="select-field" aria-label="操作类型">
+                <option value="">全部</option>
+                <option value="create_user">创建用户</option>
+                <option value="update_user">编辑用户</option>
+                <option value="delete_user">删除用户</option>
+                <option value="toggle_user">切换状态</option>
+                <option value="update_settings">修改设置</option>
+                <option value="query">数据查询</option>
+              </select>
+            </div>
+            <button @click="loadAuditLogs(1)" class="btn btn-primary btn-sm" style="align-self:flex-end">查询</button>
+          </div>
+          <div class="table-wrap" style="margin-top:12px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:60px">ID</th>
+                  <th style="width:80px">操作人</th>
+                  <th style="width:120px">操作类型</th>
+                  <th>操作对象</th>
+                  <th style="width:160px">时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="log in auditLogs" :key="log.id">
+                  <td class="id-cell">{{ log.id }}</td>
+                  <td>{{ log.operator_id }}</td>
+                  <td><span :class="['badge', auditActionBadge(log.action)]">{{ auditActionLabel(log.action) }}</span></td>
+                  <td class="email-cell">{{ log.target }}</td>
+                  <td style="font-size:12px;color:var(--text-tertiary)">{{ log.created_at?.replace('T', ' ').substring(0, 19) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="auditLogs.length === 0" class="empty-state" style="padding:32px">
+              <p>暂无审计记录</p>
+            </div>
+          </div>
+          <div v-if="auditPagination.total > 0" class="table-pagination" style="margin-top:12px">
+            <span class="page-info">第 {{ auditPagination.page }} / {{ auditPagination.totalPages }} 页，共 {{ auditPagination.total }} 条</span>
+            <div class="page-btns">
+              <button @click="loadAuditLogs(auditPagination.page - 1)" :disabled="auditPagination.page <= 1" class="btn btn-ghost btn-sm">← 上一页</button>
+              <button @click="loadAuditLogs(auditPagination.page + 1)" :disabled="auditPagination.page >= auditPagination.totalPages" class="btn btn-ghost btn-sm">下一页 →</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -142,7 +196,7 @@
               </div>
               <div class="field">
                 <label>角色</label>
-                <select v-model="userForm.role" class="select-field">
+                <select v-model="userForm.role" class="select-field" aria-label="角色">
                   <option value="end_user">普通用户</option>
                   <option value="operator">操作员</option>
                   <option value="admin">管理员</option>
@@ -162,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api";
 
@@ -172,6 +226,7 @@ const activeTab = ref("users");
 const tabs = [
   { id: "users", name: "用户管理" },
   { id: "settings", name: "系统设置" },
+  { id: "audit", name: "审计日志" },
 ];
 
 const users = ref([]);
@@ -271,12 +326,49 @@ async function saveSettings() {
   }
 }
 
+// ── 审计日志 ──
+const auditLogs = ref([]);
+const auditFilter = reactive({ action: "" });
+const auditPagination = reactive({ page: 1, size: 20, total: 0, totalPages: 0 });
+
+function auditActionLabel(action) {
+  const map = { create_user: "创建用户", update_user: "编辑用户", delete_user: "删除用户", toggle_user: "切换状态", update_settings: "修改设置", query: "数据查询" };
+  return map[action] || action;
+}
+function auditActionBadge(action) {
+  const map = { create_user: "badge-green", update_user: "badge-blue", delete_user: "badge-red", toggle_user: "badge-yellow", update_settings: "badge-purple", query: "badge-gray" };
+  return map[action] || "badge-gray";
+}
+
+async function loadAuditLogs(page = 1) {
+  try {
+    const params = new URLSearchParams();
+    params.append("page", page);
+    params.append("size", auditPagination.size);
+    if (auditFilter.action) params.append("action", auditFilter.action);
+    const response = await api.get(`/api/audit-logs?${params}`);
+    const payload = response.data;
+    auditLogs.value = payload.data || [];
+    if (payload.pagination) {
+      auditPagination.page = payload.pagination.page;
+      auditPagination.total = payload.pagination.total;
+      auditPagination.totalPages = payload.pagination.pages;
+    }
+  } catch (error) {
+    console.error("加载审计日志失败:", error);
+  }
+}
+
 function goBack() {
   router.push("/dashboard");
 }
 
 onMounted(() => {
   loadUsers();
+});
+
+watch(activeTab, (tab) => {
+  if (tab === "audit") loadAuditLogs();
 });
 </script>
 
@@ -335,7 +427,7 @@ onMounted(() => {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  background: linear-gradient(135deg, #E8784A, #F0A080);
   color: #fff; font-size: 13px; font-weight: 600;
   flex-shrink: 0;
 }
@@ -374,8 +466,8 @@ onMounted(() => {
 .range-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 18px; height: 18px; border-radius: 50%;
-  background: #6366F1; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+  background: var(--color-primary); cursor: pointer;
+  box-shadow: 0 2px 8px var(--color-primary-glow);
 }
 .ratio-value {
   font-size: var(--font-size-sm); color: var(--text-secondary);
@@ -386,9 +478,9 @@ onMounted(() => {
 .modal-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(60,40,30,0.4);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .modal-card {
@@ -396,7 +488,7 @@ onMounted(() => {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 16px 48px rgba(120,80,50,0.15);
 }
 
 .modal-header {

@@ -1,5 +1,5 @@
-<template>
-  <div ref="chartRef" class="w-full h-48"></div>
+﻿<template>
+  <div ref="chartRef" class="chart-box-sm"></div>
 </template>
 
 <script setup>
@@ -17,15 +17,15 @@ const chartRef = ref(null);
 let chartInstance = null;
 
 const defaultData = [
-  { value: 100, name: "新用户注册", itemStyle: { color: "#3B82F6" } },
-  { value: 85, name: "进入推荐页", itemStyle: { color: "#60A5FA" } },
-  { value: 65, name: "点击推荐", itemStyle: { color: "#93C5FD" } },
-  { value: 45, name: "完成播放", itemStyle: { color: "#10B981" } },
-  { value: 30, name: "转为活跃", itemStyle: { color: "#34D399" } },
+  { value: 100, name: "推荐曝光", itemStyle: { color: "#E8784A" } },
+  { value: 85, name: "用户点击", itemStyle: { color: "#F0A080" } },
+  { value: 65, name: "完播转化", itemStyle: { color: "#F5C0A0" } },
+  { value: 45, name: "冷启活跃", itemStyle: { color: "#E8A040" } },
 ];
 
 function initChart() {
   if (!chartRef.value) return;
+  if (chartInstance) chartInstance.dispose();
   chartInstance = echarts.init(chartRef.value);
   renderChart();
 }
@@ -39,8 +39,8 @@ function renderChart() {
     backgroundColor: "transparent",
     tooltip: {
       trigger: "item",
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      borderColor: "#374151",
+      backgroundColor: "rgba(60, 40, 30, 0.9)",
+      borderColor: "#D8C0B0",
       textStyle: { color: "#fff" },
       formatter: "{b}: {c}%",
     },
@@ -69,7 +69,7 @@ function renderChart() {
           lineStyle: { width: 1, type: "solid" },
         },
         itemStyle: {
-          borderColor: "#1F2937",
+          borderColor: "#E8D8CC",
           borderWidth: 1,
         },
         emphasis: {
@@ -97,3 +97,7 @@ onUnmounted(() => {
   chartInstance?.dispose();
 });
 </script>
+
+<style scoped>
+.chart-box-sm { width: 100%; height: 200px; }
+</style>

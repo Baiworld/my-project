@@ -1,48 +1,48 @@
 /* ═══════════════════════════════════════════════════════════════
    Design System — Cold-Start Hybrid Recommendation Platform
-   Dark theme with glassmorphism, animated gradients & glow effects
+   Warm fresh theme — coral & cream tones
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Brand palette ── */
-  --color-primary: #6366F1;
-  --color-primary-light: #818CF8;
-  --color-primary-dark: #4F46E5;
-  --color-primary-glow: rgba(99, 102, 241, 0.35);
+  /* ── Brand palette (warm coral) ── */
+  --color-primary: #E8784A;
+  --color-primary-light: #F0A080;
+  --color-primary-dark: #D0653A;
+  --color-primary-glow: rgba(232, 120, 74, 0.25);
 
-  --color-success: #10B981;
-  --color-success-glow: rgba(16, 185, 129, 0.3);
-  --color-warning: #F59E0B;
-  --color-warning-glow: rgba(245, 158, 11, 0.3);
-  --color-danger: #EF4444;
-  --color-danger-glow: rgba(239, 68, 68, 0.3);
-  --color-info: #3B82F6;
+  --color-success: #2D9D7A;
+  --color-success-glow: rgba(45, 157, 122, 0.2);
+  --color-warning: #E8A040;
+  --color-warning-glow: rgba(232, 160, 64, 0.2);
+  --color-danger: #E0554A;
+  --color-danger-glow: rgba(224, 85, 74, 0.2);
+  --color-info: #5B9BD5;
 
   /* ── Surface colors ── */
-  --bg-root: #0A0E1A;
-  --bg-surface: #111627;
-  --bg-surface-hover: #1A1F35;
-  --bg-surface-raised: #1B2038;
-  --bg-card: rgba(17, 22, 39, 0.7);
-  --bg-glass: rgba(255, 255, 255, 0.04);
-  --bg-glass-hover: rgba(255, 255, 255, 0.07);
+  --bg-root: #FFF8F3;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #FFF0E8;
+  --bg-surface-raised: #FFEDE2;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-glass: rgba(255, 248, 243, 0.6);
+  --bg-glass-hover: rgba(255, 240, 228, 0.8);
 
   /* ── Borders ── */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-accent: rgba(99, 102, 241, 0.35);
+  --border-subtle: rgba(180, 130, 100, 0.12);
+  --border-default: rgba(180, 130, 100, 0.2);
+  --border-strong: rgba(180, 130, 100, 0.3);
+  --border-accent: rgba(232, 120, 74, 0.35);
 
   /* ── Text ── */
-  --text-primary: #EDF0FC;
-  --text-secondary: #8B90A8;
-  --text-tertiary: #5B6080;
-  --text-inverse: #0A0E1A;
+  --text-primary: #3D2C24;
+  --text-secondary: #8B7268;
+  --text-tertiary: #B8A098;
+  --text-inverse: #FFF8F3;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 3px rgba(120, 80, 50, 0.08);
+  --shadow-md: 0 4px 16px rgba(120, 80, 50, 0.1);
+  --shadow-lg: 0 8px 32px rgba(120, 80, 50, 0.12);
   --shadow-glow-blue: 0 0 20px var(--color-primary-glow);
   --shadow-glow-green: 0 0 20px var(--color-success-glow);
 
@@ -103,7 +103,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ── Scrollbar (dark) ── */
+/* ── Scrollbar (warm light) ── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -112,11 +112,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(180, 130, 100, 0.25);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(180, 130, 100, 0.4);
 }
 
 /* ── Selection ── */
@@ -192,8 +192,8 @@ body {
 }
 
 @keyframes border-pulse {
-  0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
-  50%      { border-color: rgba(99, 102, 241, 0.7); }
+  0%, 100% { border-color: rgba(232, 120, 74, 0.3); }
+  50%      { border-color: rgba(232, 120, 74, 0.7); }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -231,8 +231,8 @@ body {
 /* ── Glass card ── */
 .glass-card {
   background: var(--bg-glass);
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
 }
@@ -259,7 +259,7 @@ body {
 .input-field {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(180, 130, 100, 0.04);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -276,14 +276,14 @@ body {
 .input-field:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-glow);
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(180, 130, 100, 0.06);
 }
 
 /* ── Select base ── */
 .select-field {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(180, 130, 100, 0.04);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -294,7 +294,7 @@ body {
   transition: border-color var(--duration-fast) ease,
               box-shadow var(--duration-fast) ease;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238B90A8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238B7268' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
@@ -318,6 +318,7 @@ body {
   font-size: var(--font-size-sm);
   font-weight: 600;
   font-family: var(--font-family);
+  text-decoration: none;
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -345,7 +346,7 @@ body {
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: linear-gradient(135deg, #2D9D7A, #1D8D6A);
   color: #fff;
   box-shadow: 0 2px 8px var(--color-success-glow);
 }
@@ -355,7 +356,7 @@ body {
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #EF4444, #DC2626);
+  background: linear-gradient(135deg, #E0554A, #D0453A);
   color: #fff;
 }
 .btn-danger:hover:not(:disabled) {
@@ -364,12 +365,12 @@ body {
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(180, 130, 100, 0.06);
   color: var(--text-secondary);
   border: 1px solid var(--border-default);
 }
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(180, 130, 100, 0.12);
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
@@ -388,12 +389,12 @@ body {
   border-radius: 99px;
   letter-spacing: 0.02em;
 }
-.badge-blue   { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
-.badge-green  { background: rgba(16, 185, 129, 0.15); color: #34D399; }
-.badge-red    { background: rgba(239, 68, 68, 0.15);  color: #F87171; }
-.badge-yellow { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
-.badge-purple { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
-.badge-gray   { background: rgba(139, 144, 168, 0.12); color: #8B90A8; }
+.badge-blue   { background: rgba(91, 155, 213, 0.15); color: #4A8AC5; }
+.badge-green  { background: rgba(45, 157, 122, 0.15); color: #2D8D6A; }
+.badge-red    { background: rgba(224, 85, 74, 0.15);  color: #D0554A; }
+.badge-yellow { background: rgba(232, 160, 64, 0.15); color: #C88030; }
+.badge-purple { background: rgba(140, 100, 180, 0.15); color: #8A64B4; }
+.badge-gray   { background: rgba(139, 114, 104, 0.12); color: #8B7268; }
 
 /* ── Data table ── */
 .data-table {
@@ -401,7 +402,7 @@ body {
   border-collapse: collapse;
 }
 .data-table thead {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(180, 130, 100, 0.05);
 }
 .data-table thead th {
   padding: 12px 16px;
@@ -422,7 +423,7 @@ body {
   transition: background var(--duration-fast) ease;
 }
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(232, 120, 74, 0.06);
 }
 
 /* ── Tab button ── */
@@ -439,7 +440,7 @@ body {
 }
 .tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(232, 120, 74, 0.06);
 }
 .tab-btn.active {
   color: #fff;
@@ -456,8 +457,8 @@ body {
   padding: 16px 28px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 /* ═══════════════════════════════════════════════════════════════

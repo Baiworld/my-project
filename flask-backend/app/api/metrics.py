@@ -38,6 +38,16 @@ def get_metrics():
         text(sql), {"start_date": start_date, "end_date": end_date}
     ).fetchall()
 
+    if not rows:
+        sql = (
+            "SELECT metric_date, user_group, content_type, ctr, cvr, "
+            "avg_watch_duration, avg_interactions, coverage, diversity, "
+            "coldstart_conversion, total_impressions, total_clicks, total_users "
+            "FROM offline_metrics "
+            f"WHERE metric_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) {order_clause}"
+        )
+        rows = db.session.execute(text(sql)).fetchall()
+
     result = []
     for m in rows:
         result.append({

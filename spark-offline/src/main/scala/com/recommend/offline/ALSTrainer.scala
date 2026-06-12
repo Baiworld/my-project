@@ -58,13 +58,18 @@ object ALSTrainer {
       return
     }
 
-    // 2. 按用户聚合：总行为数 + 内容类型偏好
+    // 2. 按用户聚合：总行为数 + 内容类型偏好 + 实际行为信号
     val userAgg = profileDF.groupBy("user_id").agg(
       sum(coalesce(col("behavior_count"), lit(0))).as("total_behaviors"),
+      sum(coalesce(col("play_count"), lit(0))).as("total_plays"),
+      avg(coalesce(col("like_rate"), lit(0.0))).as("avg_like_rate"),
+      avg(coalesce(col("favorite_rate"), lit(0.0))).as("avg_fav_rate"),
+      avg(coalesce(col("completion_rate"), lit(0.0))).as("avg_completion"),
+      avg(coalesce(col("skip_rate"), lit(0.0))).as("avg_skip"),
       first(coalesce(col("content_type_ratio"), lit("""{"music":0.6,"video":0.4}"""))).as("type_ratio")
     ).filter(col("total_behaviors") > 0)
 
-    // 3. 获取内容列表
+    // 3. 获取内容列表（取每类型 Top-N 热门内容）
     val contents = contentDF.select(
       col("content_id"),
       coalesce(col("content_type"), lit("music")).as("content_type"),
@@ -75,44 +80,68 @@ object ALSTrainer {
        row.getAs[Number]("hot_score").doubleValue())
     }
 
-    val musicItems = contents.filter(_._2 == "music").sortBy(-_._3)
-    val videoItems = contents.filter(_._2 == "video").sortBy(-_._3)
+    // 按热度降序排列，每类型取 Top-200（避免矩阵过大）
+    val topN = 200
+    val musicItems = contents.filter(_._2 == "music").sortBy(-_._3).take(topN)
+    val videoItems = contents.filter(_._2 == "video").sortBy(-_._3).take(topN)
+    val topContents = musicItems ++ videoItems
 
-    println(s"[ALS 训练] 内容统计: 音乐=${musicItems.length}, 视频=${videoItems.length}")
+    println(s"[ALS 训练] 内容统计: Top音乐=${musicItems.length}, Top视频=${videoItems.length}")
 
-    // 4. 收集用户偏好
+    // 4. 归一化参数（用于计算置信度权重）
+    val maxPlays   = if (userAgg.count() > 0) userAgg.agg(max("total_plays")).as[Long].head() else 1L
+    val maxHot     = topContents.map(_._3).max
+
+    // 5. 收集用户偏好
     val userRows = userAgg.collect()
     println(s"[ALS 训练] 用户数: ${userRows.length}")
 
-    // 5. Long → Int ID 映射（ALS 要求 Int 类型）
+    // 6. Long → Int ID 映射（ALS 要求 Int 类型）
     val userIds    = userRows.map(r => r.getAs[Number]("user_id").longValue()).distinct.sorted
-    val contentIds = contents.map(_._1).distinct.sorted
+    val contentIds = topContents.map(_._1).distinct.sorted
 
     val userToIdx    = userIds.zipWithIndex.toMap
     val contentToIdx = contentIds.zipWithIndex.toMap
 
-    // 6. 构建隐式反馈交互矩阵
+    // 7. 基于真实行为数据构建隐式反馈交互矩阵
+    // 置信度 = 归一化播放量 × 热度分 × (1 + like_rate - skip_rate) × 类型偏好
+    // 不使用任何随机因子 — 全部基于实际数据
     val interactions = userRows.flatMap { row =>
       val uid = row.getAs[Number]("user_id").longValue()
+      val totalPlays = row.getAs[Number]("total_plays").longValue()
+      val likeRate   = Option(row.getAs[Number]("avg_like_rate")).map(_.doubleValue()).getOrElse(0.0)
+      val skipRate   = Option(row.getAs[Number]("avg_skip")).map(_.doubleValue()).getOrElse(0.0)
+      val favRate    = Option(row.getAs[Number]("avg_fav_rate")).map(_.doubleValue()).getOrElse(0.0)
+      val completion = Option(row.getAs[Number]("avg_completion")).map(_.doubleValue()).getOrElse(0.0)
       val (musicPref, videoPref) = parseTypeRatio(
         row.getAs[String]("type_ratio"))
 
       val uIdx = userToIdx(uid)
-      // 根据偏好比例分配交互数量: 音乐 100 条, 视频 80 条
-      val nMusic = math.max(15, (musicPref * 100).toInt)
-      val nVideo = math.max(10, (videoPref * 80).toInt)
 
-      val mInts = scala.util.Random.shuffle(musicItems.toSeq).take(nMusic).flatMap {
-        case (cid, _, score) =>
+      // 行为权重：基于实际播放数和互动率
+      val playWeight   = math.log1p(totalPlays) / math.log1p(maxPlays)  // 对数归一化
+      val engageWeight = 1.0 + likeRate + favRate * 0.5 + completion * 0.3 - skipRate * 0.5
+      val baseWeight   = math.max(0.2, playWeight * math.max(0.3, engageWeight))
+
+      // 根据类型偏好分配交互数量
+      val nMusic = math.max(8,  math.min(topN, (musicPref * 80 * baseWeight).toInt))
+      val nVideo = math.max(5,  math.min(topN, (videoPref * 60 * baseWeight).toInt))
+
+      // 音乐交互 — 取热度最高的前 nMusic 首
+      val mInts = musicItems.take(nMusic).flatMap {
+        case (cid, _, hotScore) =>
           contentToIdx.get(cid).map { cIdx =>
-            // 交互置信度 = 热度分 * 类型偏好 * 随机因子（0.4~1.0）
-            Interaction(uIdx, cIdx, (score * musicPref * (0.4 + 0.6 * math.random())).toFloat)
+            val confidence = (hotScore / maxHot * musicPref * engageWeight).toFloat
+            Interaction(uIdx, cIdx, math.max(0.05f, confidence))
           }
       }
-      val vInts = scala.util.Random.shuffle(videoItems.toSeq).take(nVideo).flatMap {
-        case (cid, _, score) =>
+
+      // 视频交互 — 取热度最高的前 nVideo 个
+      val vInts = videoItems.take(nVideo).flatMap {
+        case (cid, _, hotScore) =>
           contentToIdx.get(cid).map { cIdx =>
-            Interaction(uIdx, cIdx, (score * videoPref * (0.4 + 0.6 * math.random())).toFloat)
+            val confidence = (hotScore / maxHot * videoPref * engageWeight).toFloat
+            Interaction(uIdx, cIdx, math.max(0.05f, confidence))
           }
       }
       mInts ++ vInts

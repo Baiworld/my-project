@@ -1,12 +1,14 @@
 """Admin API — 用户管理 + 系统设置"""
 
 from flask import Blueprint, request, jsonify
+from sqlalchemy import text
 from app.extensions import db
 from app.models.user import SysUser
 from app.models.role import SysRole, SysUserRole
 from app.auth.services import hash_password
 from app.permissions.decorators import require_role
 from app.utils.audit import write_audit
+from app.utils.validators import validate_pagination
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -169,3 +171,62 @@ def system_settings():
     write_audit("update_settings", "system", data)
 
     return jsonify({"code": 200, "message": "Settings saved", "data": _settings_cache}), 200
+
+
+# ── 审计日志查询 ──
+
+@admin_bp.route("/audit-logs", methods=["GET"])
+@require_role("admin")
+def list_audit_logs():
+    page, size = validate_pagination(
+        request.args.get("page"), request.args.get("size")
+    )
+    offset = (page - 1) * size
+
+    action = request.args.get("action")
+    operator_id = request.args.get("operator_id", type=int)
+
+    where = ["1=1"]
+    params: dict = {}
+    if action:
+        where.append("action = :action")
+        params["action"] = action
+    if operator_id:
+        where.append("operator_id = :operator_id")
+        params["operator_id"] = operator_id
+
+    where_clause = " AND ".join(where)
+
+    rows = db.session.execute(
+        text(
+            f"SELECT id, operator_id, action, target, detail, ip_address, created_at "
+            f"FROM sys_audit_log "
+            f"WHERE {where_clause} "
+            f"ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+        ),
+        {**params, "limit": size, "offset": offset},
+    ).fetchall()
+
+    total = db.session.execute(
+        text(f"SELECT COUNT(*) FROM sys_audit_log WHERE {where_clause}"),
+        params,
+    ).scalar()
+
+    result = []
+    for r in rows:
+        result.append({
+            "id": r.id,
+            "operator_id": r.operator_id,
+            "action": r.action,
+            "target": r.target,
+            "detail": r.detail,
+            "ip_address": r.ip_address,
+            "created_at": str(r.created_at),
+        })
+
+    write_audit("query", "audit-logs", {"action": action})
+    return jsonify({
+        "code": 200,
+        "data": result,
+        "pagination": {"page": page, "size": size, "total": total, "pages": max(1, (total + size - 1) // size)},
+    }), 200

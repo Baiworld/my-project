@@ -9,7 +9,9 @@ from app.models.role import SysRole
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=12)).decode("utf-8")
+    from flask import current_app
+    rounds = current_app.config.get("BCRYPT_ROUNDS", 12)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=rounds)).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:

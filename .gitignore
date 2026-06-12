@@ -46,3 +46,19 @@ docker-compose.override.yml
 metastore_db/
 derby.log
 spark-warehouse/
+checkpoints/
+models/
+
+# Data generator runtime
+data-generator/output/
+data-generator/logs/
+data-generator/pids/
+
+# Flask runtime
+flask-backend/*.pyc
+flask-backend/__pycache__/
+flask-backend/check_*.py
+flask-backend/db_check.py
+
+# Claude
+.claude/

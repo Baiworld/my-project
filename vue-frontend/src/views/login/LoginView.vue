@@ -23,7 +23,7 @@
             <path d="M12 28V14l8 8 8-8v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             <defs>
               <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40">
-                <stop stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/>
+                <stop stop-color="#E8784A"/><stop offset="1" stop-color="#F0A080"/>
               </linearGradient>
             </defs>
           </svg>
@@ -118,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
@@ -131,6 +131,14 @@ const showPwd = ref(false);
 const rememberMe = ref(false);
 const isLoading = ref(false);
 const error = ref("");
+
+onMounted(() => {
+  const saved = localStorage.getItem("rememberedUsername");
+  if (saved) {
+    username.value = saved;
+    rememberMe.value = true;
+  }
+});
 
 function particleStyle(n) {
   const left = (n * 37 + 13) % 100;
@@ -156,6 +164,11 @@ async function handleLogin() {
   try {
     const success = await authStore.login(username.value, password.value);
     if (success) {
+      if (rememberMe.value) {
+        localStorage.setItem("rememberedUsername", username.value);
+      } else {
+        localStorage.removeItem("rememberedUsername");
+      }
       router.push("/dashboard");
     } else {
       error.value = "登录失败，请检查用户名和密码";
@@ -176,7 +189,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #080C1A;
+  background: linear-gradient(135deg, #FFF0E5 0%, #FFF8F3 40%, #FFE8DA 100%);
   overflow: hidden;
 }
 
@@ -190,25 +203,25 @@ async function handleLogin() {
 }
 .orb-1 {
   width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(99,102,241,0.25), transparent);
+  background: radial-gradient(circle, rgba(232,120,74,0.2), transparent);
   top: -15%; left: -10%;
   animation-delay: 0s;
 }
 .orb-2 {
   width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(139,92,246,0.2), transparent);
+  background: radial-gradient(circle, rgba(240,160,128,0.18), transparent);
   bottom: -20%; right: -8%;
   animation-delay: -5s;
 }
 .orb-3 {
   width: 350px; height: 350px;
-  background: radial-gradient(circle, rgba(59,130,246,0.18), transparent);
+  background: radial-gradient(circle, rgba(232,160,64,0.15), transparent);
   top: 50%; left: 55%;
   animation-delay: -3s;
 }
 .orb-4 {
   width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(16,185,129,0.1), transparent);
+  background: radial-gradient(circle, rgba(45,157,122,0.1), transparent);
   top: 30%; left: -5%;
   animation-delay: -8s;
 }
@@ -217,7 +230,7 @@ async function handleLogin() {
 .particles { position: absolute; inset: 0; pointer-events: none; }
 .particle {
   position: absolute;
-  background: rgba(255,255,255,0.5);
+  background: rgba(232,120,74,0.4);
   border-radius: 50%;
   animation: rise linear infinite;
 }
@@ -235,14 +248,14 @@ async function handleLogin() {
   width: 420px;
   max-width: 92vw;
   padding: 44px 40px 36px;
-  background: rgba(15, 18, 35, 0.75);
-  backdrop-filter: blur(40px);
+  background: rgba(255,255,255,0.85);
   -webkit-backdrop-filter: blur(40px);
-  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(40px);
+  border: 1px solid var(--border-default);
   border-radius: 24px;
   box-shadow:
-    0 4px 40px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(255,255,255,0.05) inset;
+    0 4px 40px rgba(120,80,50,0.15),
+    0 0 0 1px rgba(255,255,255,0.8) inset;
 }
 
 /* ── Brand ── */
@@ -251,15 +264,15 @@ async function handleLogin() {
   width: 56px; height: 56px;
   margin: 0 auto 16px;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+  box-shadow: 0 8px 24px rgba(232,120,74,0.3);
 }
 .brand-icon svg { width: 100%; height: 100%; display: block; }
 .brand h1 {
-  font-size: 22px; font-weight: 700; color: #EDF0FC;
+  font-size: 22px; font-weight: 700; color: var(--text-primary);
   letter-spacing: 0.02em; margin-bottom: 4px;
 }
 .brand p {
-  font-size: 13px; color: #8B90A8; letter-spacing: 0.01em;
+  font-size: 13px; color: var(--text-secondary); letter-spacing: 0.01em;
 }
 
 /* ── Form ── */
@@ -267,7 +280,7 @@ async function handleLogin() {
 
 .field-group { display: flex; flex-direction: column; gap: 6px; }
 .field-group label {
-  font-size: 13px; font-weight: 500; color: #B0B5CC; letter-spacing: 0.01em;
+  font-size: 13px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.01em;
 }
 
 .input-wrapper {
@@ -277,38 +290,38 @@ async function handleLogin() {
 }
 .input-icon {
   position: absolute; left: 14px; width: 18px; height: 18px;
-  color: #6B7090; pointer-events: none; transition: color 0.2s;
+  color: var(--text-tertiary); pointer-events: none; transition: color 0.2s;
 }
 .input-wrapper:focus-within .input-icon {
-  color: #818CF8;
+  color: var(--color-primary);
 }
 .input-wrapper input {
   width: 100%;
   padding: 11px 14px 11px 42px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(180,130,100,0.04);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
-  color: #EDF0FC;
+  color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
-.input-wrapper input::placeholder { color: #5B6080; }
+.input-wrapper input::placeholder { color: var(--text-tertiary); }
 .input-wrapper input:focus {
-  border-color: #6366F1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-  background: rgba(255,255,255,0.06);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
+  background: rgba(180,130,100,0.06);
 }
 
 .toggle-pwd {
   position: absolute; right: 10px;
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
-  background: none; border: none; color: #6B7090;
+  background: none; border: none; color: var(--text-tertiary);
   cursor: pointer; border-radius: 6px; transition: color 0.2s;
 }
-.toggle-pwd:hover { color: #B0B5CC; }
+.toggle-pwd:hover { color: var(--text-secondary); }
 .toggle-pwd svg { width: 18px; height: 18px; }
 
 /* ── Row ── */
@@ -319,19 +332,19 @@ async function handleLogin() {
 /* ── Custom checkbox ── */
 .checkbox-label {
   display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: #8B90A8; cursor: pointer; user-select: none;
+  font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;
 }
 .checkbox-label input { display: none; }
 .checkmark {
   width: 18px; height: 18px;
-  border: 1.5px solid rgba(255,255,255,0.2);
+  border: 1.5px solid var(--border-default);
   border-radius: 5px;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
   flex-shrink: 0;
 }
 .checkbox-label input:checked + .checkmark {
-  background: #6366F1; border-color: #6366F1;
+  background: var(--color-primary); border-color: var(--color-primary);
 }
 .checkbox-label input:checked + .checkmark::after {
   content: "";
@@ -344,18 +357,18 @@ async function handleLogin() {
 .btn-submit {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: 100%; padding: 13px;
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  background: linear-gradient(135deg, #E8784A, #F0A080);
   border: none; border-radius: 10px;
   color: #fff; font-size: 15px; font-weight: 600;
   font-family: inherit; letter-spacing: 0.04em;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+  box-shadow: 0 4px 16px rgba(232,120,74,0.35);
   transition: all 0.25s cubic-bezier(0.19,1,0.22,1);
   margin-top: 4px;
 }
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(99,102,241,0.5);
+  box-shadow: 0 6px 24px rgba(232,120,74,0.5);
 }
 .btn-submit:active:not(:disabled) { transform: translateY(0); }
 .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -373,25 +386,25 @@ async function handleLogin() {
 .alert-error {
   display: flex; align-items: center; gap: 8px;
   margin-top: 16px; padding: 12px 14px;
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
+  background: rgba(224,85,74,0.08);
+  border: 1px solid rgba(224,85,74,0.2);
   border-radius: 10px;
-  color: #FCA5A5; font-size: 13px;
+  color: #D0554A; font-size: 13px;
 }
-.alert-icon { width: 18px; height: 18px; flex-shrink: 0; color: #F87171; }
+.alert-icon { width: 18px; height: 18px; flex-shrink: 0; color: #E0554A; }
 .alert-enter-active { animation: fadeInDown 0.3s ease; }
 .alert-leave-active { animation: fadeInDown 0.2s ease reverse; }
 
 /* ── Footer ── */
 .card-footer {
   margin-top: 28px; padding-top: 20px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  text-align: center; font-size: 13px; color: #8B90A8;
+  border-top: 1px solid var(--border-subtle);
+  text-align: center; font-size: 13px; color: var(--text-secondary);
   display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .card-footer a {
-  color: #818CF8; text-decoration: none; font-weight: 500;
+  color: var(--color-primary); text-decoration: none; font-weight: 500;
   transition: color 0.2s;
 }
-.card-footer a:hover { color: #A5B4FC; }
+.card-footer a:hover { color: var(--color-primary-dark); }
 </style>

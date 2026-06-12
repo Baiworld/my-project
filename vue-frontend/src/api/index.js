@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const baseURL = import.meta.env.VITE_API_URL || "";
 
 const instance = axios.create({
   baseURL,
@@ -76,6 +76,16 @@ const api = {
   },
   coldstart: {
     getAnalysis: () => instance.get("/api/coldstart/analysis"),
+    getStats: () => instance.get("/api/coldstart/stats"),
+  },
+  export: {
+    download: async (table, format = "csv") => {
+      const response = await instance.get(`/api/export/${table}`, {
+        params: { format },
+        responseType: "blob",
+      });
+      return response;
+    },
   },
   health: {
     check: () => instance.get("/api/health"),

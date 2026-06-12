@@ -1,0 +1,7 @@
+[mcp_servers.mysql]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-mysql",
+    "mysql://root:Niit%40123@localhost:3306/myapp",
+]

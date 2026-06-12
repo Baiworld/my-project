@@ -7,7 +7,7 @@
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="10" fill="url(#side-logo-grad)"/>
             <path d="M10 26V12l8 8 8-8v14" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            <defs><linearGradient id="side-logo-grad" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#6366F1"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs>
+            <defs><linearGradient id="side-logo-grad" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#E8784A"/><stop offset="1" stop-color="#F0A080"/></linearGradient></defs>
           </svg>
         </div>
         <div>
@@ -47,8 +47,8 @@
         </div>
         <div class="top-right">
           <div class="header-actions">
-            <router-link to="/query" class="btn btn-ghost btn-sm" v-if="canQuery">查询管理</router-link>
-            <router-link to="/admin" class="btn btn-ghost btn-sm" v-if="canAdmin">系统管理</router-link>
+            <a href="/query" class="btn btn-ghost btn-sm" v-if="canQuery" @click.prevent="navigateTo('/query')">查询管理</a>
+            <a href="/admin" class="btn btn-ghost btn-sm" v-if="canAdmin" @click.prevent="navigateTo('/admin')">系统管理</a>
           </div>
           <button @click="handleLogout" class="btn btn-ghost btn-sm logout-btn">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 14H3.3A1.3 1.3 0 012 12.7V3.3A1.3 1.3 0 013.3 2H6M11 11l3-3-3-3M14 8H6"/></svg>
@@ -67,10 +67,10 @@
           <template v-if="activeTab === 'realtime'">
             <div class="stagger">
               <div class="metrics-row">
-                <MetricCard title="实时在线用户" :value="dashboardStore.metrics.onlineUsers" unit="人" trend="+12.5%" trendType="up" accent="blue" icon="users" />
-                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" trend="+8.3%" trendType="up" accent="green" icon="target" />
-                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" trend="-1.2%" trendType="down" accent="purple" icon="trend" />
-                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" trend="+5.8%" trendType="up" accent="orange" icon="clock" />
+                <MetricCard title="实时在线用户" :value="dashboardStore.metrics.onlineUsers" unit="人" :trend="dashboardStore.metricsTrend.onlineUsers.value" :trendType="dashboardStore.metricsTrend.onlineUsers.type" accent="blue" icon="users" />
+                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" :trend="dashboardStore.metricsTrend.todayRecommendations.value" :trendType="dashboardStore.metricsTrend.todayRecommendations.type" accent="green" icon="target" />
+                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" :trend="dashboardStore.metricsTrend.todayCTR.value" :trendType="dashboardStore.metricsTrend.todayCTR.type" accent="purple" icon="trend" />
+                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" :trend="dashboardStore.metricsTrend.avgWatchDuration.value" :trendType="dashboardStore.metricsTrend.avgWatchDuration.type" accent="orange" icon="clock" />
               </div>
 
               <div class="chart-row cols-2">
@@ -80,19 +80,25 @@
                 </div>
                 <div class="chart-panel">
                   <div class="panel-header"><h3>内容热度 Top 10</h3><span class="panel-badge">实时更新</span></div>
-                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" /></div>
+                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" @item-click="openContentDetail" /></div>
                 </div>
               </div>
 
-              <div class="chart-panel log-panel">
-                <div class="panel-header">
-                  <h3>实时行为日志</h3>
-                  <div class="panel-actions">
-                    <span class="log-count">{{ dashboardStore.eventLogs.length }} 条</span>
-                    <button @click="dashboardStore.clearEventLogs" class="btn btn-ghost btn-sm">清空</button>
-                  </div>
+              <div class="chart-row cols-2">
+                <div class="chart-panel">
+                  <div class="panel-header"><h3>地区活跃热力图</h3><span class="panel-badge">24 小时分布</span></div>
+                  <div class="panel-body"><RegionHeatmap :data="dashboardStore.regionData" /></div>
                 </div>
-                <div class="panel-body"><ScrollLog :logs="dashboardStore.eventLogs" /></div>
+                <div class="chart-panel log-panel">
+                  <div class="panel-header">
+                    <h3>实时行为日志</h3>
+                    <div class="panel-actions">
+                      <span class="log-count">{{ dashboardStore.eventLogs.length }} 条</span>
+                      <button @click="dashboardStore.clearEventLogs" class="btn btn-ghost btn-sm">清空</button>
+                    </div>
+                  </div>
+                  <div class="panel-body"><ScrollLog :logs="dashboardStore.eventLogs" /></div>
+                </div>
               </div>
             </div>
           </template>
@@ -109,7 +115,7 @@
                 </div>
                 <div class="chart-panel">
                   <div class="panel-header"><h3>内容热度 Top 10</h3><span class="panel-badge">实时更新</span></div>
-                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" /></div>
+                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" @item-click="openContentDetail" /></div>
                 </div>
               </div>
               <div class="chart-row cols-2">
@@ -120,15 +126,8 @@
                   </div>
                 </div>
                 <div class="chart-panel">
-                  <div class="panel-header"><h3>CTR 与推荐数量趋势</h3></div>
-                  <div class="panel-body" style="display:flex;align-items:center;justify-content:center;min-height:260px">
-                    <div style="text-align:center">
-                      <div style="font-size:48px;font-weight:700;color:#818CF8">{{ (dashboardStore.metrics.todayCTR * 100).toFixed(2) }}%</div>
-                      <div style="color:var(--text-secondary);margin-top:4px">今日点击率</div>
-                      <div style="font-size:32px;font-weight:700;color:#34D399;margin-top:20px">{{ dashboardStore.metrics.todayRecommendations.toLocaleString() }}</div>
-                      <div style="color:var(--text-secondary);margin-top:4px">今日推荐总数</div>
-                    </div>
-                  </div>
+                  <div class="panel-header"><h3>推荐曝光量趋势</h3><span class="panel-badge">近 7 天</span></div>
+                  <div class="panel-body"><TrendLineChart :data="dashboardStore.trendData.playCount" /></div>
                 </div>
               </div>
             </div>
@@ -140,10 +139,10 @@
           <template v-if="activeTab === 'coldstart'">
             <div class="stagger">
               <div class="metrics-row">
-                <MetricCard title="冷启动用户数" :value="dashboardStore.coldstartStats.newUsers || 432" unit="人" trend="+15.3%" trendType="up" accent="blue" icon="users" />
-                <MetricCard title="聚类数量" :value="dashboardStore.clusterDistribution.length || 8" unit="个" trend="" trendType="up" accent="green" icon="target" />
-                <MetricCard title="平均行为次数" :value="23" unit="次" trend="+3.2%" trendType="up" accent="purple" icon="trend" />
-                <MetricCard title="冷启动转化率" :value="'32.5%'" unit="" trend="+5.1%" trendType="up" accent="orange" icon="clock" />
+                <MetricCard title="冷启动用户数" :value="dashboardStore.coldstartStats.newUsers" unit="人" trend="" trendType="up" accent="blue" icon="users" />
+                <MetricCard title="聚类数量" :value="dashboardStore.clusterDistribution.length" unit="个" trend="" trendType="up" accent="green" icon="target" />
+                <MetricCard title="平均行为次数" :value="dashboardStore.coldstartStats.avgBehaviors" unit="次" trend="" trendType="up" accent="purple" icon="trend" />
+                <MetricCard title="冷启动转化率" :value="dashboardStore.coldstartStats.conversionRate + '%'" unit="" trend="" trendType="up" accent="orange" icon="clock" />
               </div>
               <div class="chart-row cols-2">
                 <div class="chart-panel">
@@ -152,7 +151,7 @@
                 </div>
                 <div class="chart-panel">
                   <div class="panel-header"><h3>冷启动转化漏斗</h3></div>
-                  <div class="panel-body"><FunnelChart :data="funnelData" /></div>
+                  <div class="panel-body"><FunnelChart :data="dashboardStore.funnelData" /></div>
                 </div>
               </div>
             </div>
@@ -167,7 +166,7 @@
                 <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" trend="+8.3%" trendType="up" accent="green" icon="target" />
                 <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" trend="-1.2%" trendType="down" accent="purple" icon="trend" />
                 <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" trend="+5.8%" trendType="up" accent="orange" icon="clock" />
-                <MetricCard title="推荐覆盖率" :value="'78.3%'" unit="" trend="+2.1%" trendType="up" accent="blue" icon="users" />
+                <MetricCard title="推荐覆盖率" :value="(dashboardStore.metrics.coverage * 100).toFixed(1) + '%'" unit="" :trend="dashboardStore.metricsTrend.coverage.value" :trendType="dashboardStore.metricsTrend.coverage.type" accent="blue" icon="users" />
               </div>
               <div class="chart-row cols-3">
                 <div class="chart-panel">
@@ -182,7 +181,19 @@
                 </div>
                 <div class="chart-panel">
                   <div class="panel-header"><h3>内容热度 Top 10</h3></div>
-                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" /></div>
+                  <div class="panel-body"><HotBarChart :data="dashboardStore.hotContent" @item-click="openContentDetail" /></div>
+                </div>
+              </div>
+              <div class="chart-row cols-2">
+                <div class="chart-panel">
+                  <div class="panel-header"><h3>推荐策略分布</h3><span class="panel-badge">coldstart / established</span></div>
+                  <div class="panel-body">
+                    <DonutChart :data="dashboardStore.strategyDistribution.length ? dashboardStore.strategyDistribution : [{ name: '暂无数据', value: 1 }]" />
+                  </div>
+                </div>
+                <div class="chart-panel">
+                  <div class="panel-header"><h3>冷启动 vs 存量策略对比</h3><span class="panel-badge">同天数据</span></div>
+                  <div class="panel-body"><StrategyCompareChart :data="dashboardStore.compareData" /></div>
                 </div>
               </div>
             </div>
@@ -191,11 +202,44 @@
         </div>
       </div>
     </div>
+
+    <!-- Content Detail Modal -->
+    <teleport to="body">
+      <transition name="modal">
+        <div v-if="contentModal.visible" class="modal-overlay" @click.self="closeContentModal">
+          <div class="modal-card content-detail-card">
+            <div class="modal-header">
+              <h3>{{ contentModal.data?.title || '内容详情' }}</h3>
+              <button @click="closeContentModal" class="modal-close">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+              </button>
+            </div>
+            <div class="modal-body" v-if="contentModal.data">
+              <div class="detail-grid">
+                <div class="detail-item"><span class="detail-label">ID</span><span class="detail-value">{{ contentModal.data.content_id }}</span></div>
+                <div class="detail-item"><span class="detail-label">类型</span><span class="detail-value">{{ contentModal.data.content_type === 'music' ? '🎵 音乐' : '🎬 视频' }}</span></div>
+                <div class="detail-item"><span class="detail-label">作者/艺人</span><span class="detail-value">{{ contentModal.data.artist_or_author || '-' }}</span></div>
+                <div class="detail-item"><span class="detail-label">风格/分类</span><span class="detail-value">{{ contentModal.data.style_or_category || '-' }}</span></div>
+                <div class="detail-item"><span class="detail-label">时长</span><span class="detail-value">{{ contentModal.data.duration ? (contentModal.data.duration + ' 秒') : '-' }}</span></div>
+                <div class="detail-item"><span class="detail-label">语言</span><span class="detail-value">{{ contentModal.data.language || '-' }}</span></div>
+                <div class="detail-item" v-if="contentModal.data.content_type === 'music'"><span class="detail-label">BPM</span><span class="detail-value">{{ contentModal.data.bpm || '-' }}</span></div>
+              </div>
+              <div class="detail-tags" v-if="contentModal.data.tags">
+                <span class="detail-label">标签</span>
+                <div class="tags-list">
+                  <span v-for="tag in parseTags(contentModal.data.tags)" :key="tag" class="badge badge-blue" style="margin:2px">{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useDashboardStore } from "@/stores/dashboard";
@@ -206,18 +250,26 @@ import HotBarChart from "./components/HotBarChart.vue";
 import DonutChart from "./components/DonutChart.vue";
 import ClusterPieChart from "./components/ClusterPieChart.vue";
 import FunnelChart from "./components/FunnelChart.vue";
+import RegionHeatmap from "./components/RegionHeatmap.vue";
 import ScrollLog from "./components/ScrollLog.vue";
+import StrategyCompareChart from "./components/StrategyCompareChart.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const dashboardStore = useDashboardStore();
-const { connected: wsConnected, connect: wsConnect, on: wsOn } = useWebSocket();
+const { connected: wsConnected, connect: wsConnect, on: wsOn, off: wsOff } = useWebSocket();
 
 const activeTab = ref("realtime");
 const currentTime = ref("");
 
 const canQuery = computed(() => authStore.hasRole("operator") || authStore.hasRole("admin"));
 const canAdmin = computed(() => authStore.hasRole("admin"));
+
+function navigateTo(path) {
+  router.push(path).catch(() => {
+    window.location.href = path;
+  });
+}
 
 const tabs = [
   { id: "realtime", name: "实时监控", icon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>' },
@@ -228,23 +280,43 @@ const tabs = [
 
 const activeTabLabel = computed(() => tabs.find(t => t.id === activeTab.value)?.name || "");
 
-const funnelData = computed(() => {
-  const clusterData = dashboardStore.clusterDistribution;
-  if (!clusterData || clusterData.length === 0) return [];
-  const total = clusterData.reduce((s, c) => s + (c.count || c.value || 0), 0) || 1;
-  const colors = ["#6366F1", "#818CF8", "#A5B4FC", "#34D399", "#6EE7B7"];
-  return clusterData.slice(0, 5).map((c, i) => ({
-    value: Math.round(((c.count || c.value || 0) / total) * 100),
-    name: c.cluster_name || c.name || `聚类 ${i + 1}`,
-    itemStyle: { color: colors[i % colors.length] },
-  }));
-});
 
 function formatDuration(seconds) {
   if (!seconds) return "00:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+// ── Content detail modal ──
+const contentModal = reactive({ visible: false, data: null });
+
+async function openContentDetail(item) {
+  try {
+    const token = localStorage.getItem("accessToken");
+    const typeParam = item.content_type ? `?type=${item.content_type}` : "";
+    const resp = await fetch(`/api/content/${item.content_id}${typeParam}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (resp.ok) {
+      const json = await resp.json();
+      contentModal.data = json.data;
+      contentModal.visible = true;
+    }
+  } catch (e) {
+    console.error("Failed to load content detail:", e);
+  }
+}
+
+function closeContentModal() {
+  contentModal.visible = false;
+  contentModal.data = null;
+}
+
+function parseTags(tags) {
+  if (!tags) return [];
+  if (Array.isArray(tags)) return tags;
+  try { return JSON.parse(tags); } catch { return []; }
 }
 
 function handleLogout() {
@@ -261,6 +333,8 @@ function updateTime() {
 }
 
 let timeInterval;
+let onDashboardUpdate = null;
+let onUserEvent = null;
 
 onMounted(async () => {
   updateTime();
@@ -274,21 +348,35 @@ onMounted(async () => {
   ]);
 
   wsConnect();
-  wsOn("dashboard_update", (msg) => {
+
+  onDashboardUpdate = (msg) => {
     if (!msg || msg.type !== "dashboard_snapshot") return;
     const d = msg.data;
     if (d) {
-      dashboardStore.metrics = {
-        onlineUsers: d.online_users || 0,
-        todayRecommendations: d.daily_recommendations || 0,
-        todayCTR: d.ctr || 0,
-        avgWatchDuration: d.avg_watch_duration || 0,
-      };
+      if (d.online_users > 0) dashboardStore.metrics.onlineUsers = d.online_users;
+      if (d.daily_recommendations > 0) dashboardStore.metrics.todayRecommendations = d.daily_recommendations;
+      if (d.ctr > 0) dashboardStore.metrics.todayCTR = d.ctr;
+      if (d.avg_watch_duration > 0) dashboardStore.metrics.avgWatchDuration = d.avg_watch_duration;
+      if (d.coverage > 0) dashboardStore.metrics.coverage = d.coverage;
       if (d.hot_content_top5) dashboardStore.hotContent = d.hot_content_top5;
       if (d.coldstart_new_today != null) dashboardStore.coldstartStats.newUsers = d.coldstart_new_today;
+      if (d.ctr_trend && d.ctr_trend.length > 0) {
+        dashboardStore.trendData.ctr = d.ctr_trend;
+      }
+      if (d.cluster_distribution && d.cluster_distribution.length > 0) {
+        dashboardStore.clusterDistribution = d.cluster_distribution;
+      }
+      if (d.strategy_distribution && d.strategy_distribution.length > 0) {
+        const strategyNames = { als_cf: "ALS协同过滤", coldstart: "冷启动策略", established: "存量策略", exploration: "探索策略", content_based: "内容推荐", hybrid: "混合推荐" };
+        dashboardStore.strategyDistribution = d.strategy_distribution.map((s) => ({
+          ...s,
+          name: strategyNames[s.name] || s.name,
+        }));
+      }
     }
-  });
-  wsOn("user_event", (msg) => {
+  };
+
+  onUserEvent = (msg) => {
     const d = msg?.data;
     if (d) {
       dashboardStore.addEventLog({
@@ -298,11 +386,16 @@ onMounted(async () => {
         content_id: d.content_id || 0,
       });
     }
-  });
+  };
+
+  wsOn("dashboard_update", onDashboardUpdate);
+  wsOn("user_event", onUserEvent);
 });
 
 onUnmounted(() => {
   clearInterval(timeInterval);
+  wsOff("dashboard_update", onDashboardUpdate);
+  wsOff("user_event", onUserEvent);
 });
 </script>
 
@@ -340,7 +433,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(99,102,241,0.3);
 }
 .brand-logo svg { width: 100%; height: 100%; display: block; }
-.sidebar-brand h2 { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+.sidebar-brand h2 { font-size: 15px; font-weight: 700; color: var(--color-primary-dark); line-height: 1.3; }
 .sidebar-brand p  { font-size: 11px; color: var(--text-tertiary); }
 
 .sidebar-nav {
@@ -369,12 +462,13 @@ onUnmounted(() => {
   width: 100%;
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgba(232,120,74,0.06);
   color: var(--text-primary);
 }
 .nav-item.active {
-  background: rgba(99,102,241,0.12);
-  color: #C7D2FE;
+  background: rgba(232,120,74,0.12);
+  color: var(--color-primary-dark);
+  font-weight: 600;
 }
 .nav-icon {
   width: 20px; height: 20px;
@@ -387,8 +481,8 @@ onUnmounted(() => {
   right: 12px;
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: #818CF8;
-  box-shadow: 0 0 8px rgba(129,140,248,0.5);
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary-glow);
 }
 
 .sidebar-footer {
@@ -489,4 +583,55 @@ onUnmounted(() => {
 .panel-body { padding: 12px 20px 20px; }
 
 .log-panel .panel-body { padding: 0 0 0 0; }
+
+/* ── Content detail modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(60,40,30,0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.modal-card {
+  width: 460px; max-width: 92vw;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 48px rgba(120,80,50,0.15);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 0;
+}
+.modal-header h3 { font-size: var(--font-size-lg); font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.04); border: none; border-radius: 8px;
+  color: var(--text-secondary); cursor: pointer;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.modal-close svg { width: 16px; height: 16px; }
+.modal-body { padding: 16px 24px 20px; }
+.modal-enter-active { transition: opacity 0.25s ease; }
+.modal-enter-active .modal-card { animation: fadeInScale 0.3s cubic-bezier(0.19,1,0.22,1); }
+.modal-leave-active { transition: opacity 0.2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+
+.content-detail-card .detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.detail-item {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.detail-label {
+  font-size: var(--font-size-xs); color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.detail-value {
+  font-size: var(--font-size-sm); color: var(--text-primary);
+}
+.detail-tags { margin-top: 16px; }
+.detail-tags .detail-label { display: block; margin-bottom: 6px; }
+.tags-list { display: flex; flex-wrap: wrap; gap: 4px; }
 </style>

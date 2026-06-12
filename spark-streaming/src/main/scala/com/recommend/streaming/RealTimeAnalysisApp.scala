@@ -38,7 +38,7 @@ object RealTimeAnalysisApp {
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
     val ssc = new StreamingContext(conf, Seconds(10))  // 10 秒微批次间隔
-    ssc.checkpoint("E:/TraeBD/checkpoints/streaming")
+    ssc.checkpoint("E:/TraeBD/checkpoints/streaming-v2")
 
     // ── 2. Kafka 消费配置 ──
     val groupId = if (cfg.hasPath("kafka.group.id")) cfg.getString("kafka.group.id") else "hybrid_rec_streaming"
@@ -48,7 +48,7 @@ object RealTimeAnalysisApp {
       "key.deserializer"   -> classOf[StringDeserializer],
       "value.deserializer" -> classOf[StringDeserializer],
       "group.id"           -> groupId,
-      "auto.offset.reset"  -> "latest",
+      "auto.offset.reset"  -> "earliest",
       "enable.auto.commit" -> (false: java.lang.Boolean)
     )
 
@@ -72,10 +72,13 @@ object RealTimeAnalysisApp {
     // ── 4. 数据校验 ──
     val validatedBehavior = behaviorStream.transform(rdd => DataValidator.validateBehavior(rdd))
     val validatedRegister = registerStream.transform(rdd => DataValidator.validateRegister(rdd))
-    // 内容元数据目前只校验，不写入 MySQL（按需扩展）
+    // 内容元数据校验后写入 MySQL content_metadata 表
     metadataStream.foreachRDD { rdd =>
       val valid = DataValidator.validateMetadata(rdd)
-      println(s"[元数据] 校验通过: ${valid.count()} 条")
+      if (!valid.isEmpty()) {
+        MySQLBatchWriter.writeContentMetadata(valid)
+        println(s"[元数据] 校验通过并写入: ${valid.count()} 条")
+      }
     }
 
     // ── 5. 实时聚合（三个并行管线） ──

@@ -168,6 +168,50 @@ object MySQLBatchWriter extends Serializable {
     }
   }
 
+  /**
+   * 将内容元数据 RDD 写入 content_metadata 表
+   *
+   * 使用 INSERT IGNORE 实现幂等写入，重复消费相同 content_id 时自动跳过。
+   */
+  def writeContentMetadata(rdd: RDD[ContentMetaEvent]): Unit = {
+    rdd.foreachPartition { iter =>
+      if (iter.nonEmpty) {
+        val conn = getConnection()
+        try {
+          val sql =
+            """INSERT IGNORE INTO content_metadata
+              |  (content_id, content_type, title, artist_or_author,
+              |   style_or_category, tags, duration, language, bpm)
+              |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """.stripMargin
+          val ps = conn.prepareStatement(sql)
+          var count = 0
+          iter.foreach { m =>
+            ps.setLong(1, m.contentId)
+            ps.setString(2, m.contentType)
+            ps.setString(3, m.title)
+            ps.setString(4, m.artistOrAuthor)
+            ps.setString(5, m.styleOrCategory)
+            ps.setString(6, if (m.tags != null) m.tags.mkString("[", "\"", "\"]") else "[]")
+            ps.setDouble(7, m.duration)
+            ps.setString(8, m.language)
+            ps.setDouble(9, m.bpm)
+            ps.addBatch()
+            count += 1
+            if (count >= batchSize) {
+              ps.executeBatch()
+              count = 0
+            }
+          }
+          if (count > 0) ps.executeBatch()
+          ps.close()
+        } finally {
+          conn.close()
+        }
+      }
+    }
+  }
+
   /** 获取 MySQL 数据库连接 */
   private def getConnection(): Connection = {
     Class.forName("com.mysql.cj.jdbc.Driver")

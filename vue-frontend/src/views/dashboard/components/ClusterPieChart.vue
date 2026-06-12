@@ -1,5 +1,5 @@
-<template>
-  <div ref="chartRef" class="w-full h-48"></div>
+﻿<template>
+  <div ref="chartRef" class="chart-box-sm"></div>
 </template>
 
 <script setup>
@@ -13,34 +13,27 @@ const props = defineProps({
 const chartRef = ref(null);
 let chartInstance = null;
 
-const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
+const colors = ["#E8784A", "#F0A080", "#E8A040", "#C88030", "#D08060", "#F5C0A0", "#B87050", "#A06040"];
 
 function initChart() {
   if (!chartRef.value) return;
-
+  if (chartInstance) chartInstance.dispose();
   chartInstance = echarts.init(chartRef.value);
-  
-  const clusterData = props.data.length 
+
+  const clusterData = props.data.length
     ? props.data.map((d, i) => ({
-        value: d.user_count || 0,
-        name: `簇 ${d.cluster_id}`,
+        value: d.count || d.user_count || 0,
+        name: d.cluster_name || `簇 ${d.cluster_id || i}`,
         itemStyle: { color: colors[i % colors.length] },
       }))
-    : [
-        { value: 15, name: "簇 0", itemStyle: { color: colors[0] } },
-        { value: 20, name: "簇 1", itemStyle: { color: colors[1] } },
-        { value: 18, name: "簇 2", itemStyle: { color: colors[2] } },
-        { value: 12, name: "簇 3", itemStyle: { color: colors[3] } },
-        { value: 25, name: "簇 4", itemStyle: { color: colors[4] } },
-        { value: 10, name: "簇 5", itemStyle: { color: colors[5] } },
-      ];
-  
+    : [{ value: 1, name: "暂无聚类数据", itemStyle: { color: colors[0] } }];
+
   const option = {
     backgroundColor: "transparent",
     tooltip: {
       trigger: "item",
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      borderColor: "#374151",
+      backgroundColor: "rgba(60, 40, 30, 0.9)",
+      borderColor: "#D8C0B0",
       textStyle: { color: "#fff" },
     },
     series: [
@@ -51,17 +44,17 @@ function initChart() {
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 6,
-          borderColor: "#1F2937",
+          borderColor: "#E8D8CC",
           borderWidth: 2,
         },
         label: {
           show: true,
-          color: "#9CA3AF",
+          color: "#8B7268",
           fontSize: 10,
           formatter: "{b}\n{c}",
         },
         labelLine: {
-          lineStyle: { color: "#4B5563" },
+          lineStyle: { color: "#C8B0A0" },
         },
         data: clusterData,
       },
@@ -89,3 +82,8 @@ onUnmounted(() => {
   chartInstance?.dispose();
 });
 </script>
+
+<style scoped>
+.chart-box-sm { width: 100%; height: 200px; }
+</style>
+

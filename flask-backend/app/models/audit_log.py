@@ -8,7 +8,7 @@ class SysAuditLog(db.Model):
     __tablename__ = "sys_audit_log"
 
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)
-    operator_id = db.Column(db.Integer, db.ForeignKey("sys_user.id"), nullable=False)
+    operator_id = db.Column(db.Integer, db.ForeignKey("sys_user.id"), nullable=True)
     action = db.Column(db.String(64), nullable=False)
     target = db.Column(db.String(128), nullable=False)
     detail = db.Column(db.JSON, nullable=True)

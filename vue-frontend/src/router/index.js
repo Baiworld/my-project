@@ -27,6 +27,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ["operator", "admin"] },
   },
   {
+    path: "/query/user/:id",
+    name: "UserProfileDetail",
+    component: () => import("@/views/query/UserProfileDetail.vue"),
+    meta: { requiresAuth: true, roles: ["operator", "admin"] },
+  },
+  {
     path: "/admin",
     name: "Admin",
     component: () => import("@/views/admin/AdminView.vue"),
@@ -43,19 +49,22 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return next("/login");
+    next("/login");
+    return;
   }
 
   if (to.meta.roles && !to.meta.roles.some((r) => authStore.hasRole(r))) {
-    return next("/dashboard");
+    next("/dashboard");
+    return;
   }
 
   if (to.meta.guest && authStore.isAuthenticated) {
-    return next("/dashboard");
+    next("/dashboard");
+    return;
   }
 
   next();

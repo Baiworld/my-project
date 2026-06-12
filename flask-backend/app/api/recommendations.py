@@ -24,27 +24,29 @@ def get_recommendations():
     where = ["1=1"]
     params: dict = {}
     if user_id:
-        where.append("user_id = :user_id")
+        where.append("r.user_id = :user_id")
         params["user_id"] = user_id
     if content_type in ("music", "video"):
-        where.append("content_type = :content_type")
+        where.append("r.content_type = :content_type")
         params["content_type"] = content_type
 
     where_clause = " AND ".join(where)
 
     rows = db.session.execute(
         text(
-            f"SELECT user_id, content_id, content_type, `rank`, score, reason, strategy "
-            f"FROM offline_recommendations "
+            f"SELECT r.user_id, r.content_id, r.content_type, r.`rank`, r.score, r.reason, r.strategy, "
+            f"COALESCE(m.title, CONCAT(IF(r.content_type='music','音乐','视频'), ' #', r.content_id)) AS title "
+            f"FROM offline_recommendations r "
+            f"LEFT JOIN content_metadata m ON r.content_id = m.content_id AND r.content_type = m.content_type "
             f"WHERE {where_clause} "
-            f"ORDER BY `rank` LIMIT :limit OFFSET :offset"
+            f"ORDER BY r.`rank` LIMIT :limit OFFSET :offset"
         ),
         {**params, "limit": size, "offset": offset},
     ).fetchall()
 
     total = db.session.execute(
         text(
-            f"SELECT COUNT(*) FROM offline_recommendations WHERE {where_clause}"
+            f"SELECT COUNT(*) FROM offline_recommendations r WHERE {where_clause}"
         ),
         params,
     ).scalar()
@@ -54,7 +56,7 @@ def get_recommendations():
         result.append({
             "id": r.content_id,
             "user_id": r.user_id,
-            "title": f"{'音乐' if r.content_type == 'music' else '视频'} #{r.content_id}",
+            "title": r.title,
             "type": r.content_type,
             "rank": r.rank,
             "score": float(r.score),

@@ -6,6 +6,7 @@ from app.extensions import db
 from app.permissions.decorators import require_role
 from app.utils.audit import write_audit
 from app.utils.validators import validate_pagination
+from app.utils.cluster_utils import get_cluster_distribution
 
 coldstart_bp = Blueprint("coldstart", __name__)
 
@@ -25,7 +26,6 @@ def get_coldstart_analysis():
     params: dict = {}
     if content_type in ("music", "video"):
         where.append("JSON_EXTRACT(content_type_ratio, '$.video') IS NOT NULL")
-        params["content_type"] = content_type
 
     where_clause = " AND ".join(where)
 
@@ -67,4 +67,59 @@ def get_coldstart_analysis():
         "code": 200,
         "data": result,
         "pagination": {"page": page, "size": size, "total": total, "pages": max(1, (total + size - 1) // size)},
+    }), 200
+
+
+@coldstart_bp.route("/coldstart/stats", methods=["GET"])
+@require_role("operator", "admin")
+def get_coldstart_stats():
+    # 冷启动用户总数（不去重所有 rt_user_profile 中标记为冷启动的 user_id）
+    total_cold = db.session.execute(
+        text("SELECT COUNT(*) FROM rt_user_profile WHERE is_cold_start = 1")
+    ).scalar() or 0
+
+    # 近 24 小时活跃冷启动用户
+    active_24h = db.session.execute(
+        text("SELECT COUNT(*) FROM rt_user_profile "
+             "WHERE is_cold_start = 1 "
+             "AND window_end >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+    ).scalar() or 0
+
+    # 冷启动用户平均行为次数
+    avg_behavior = db.session.execute(
+        text("SELECT ROUND(AVG(behavior_count), 1) FROM rt_user_profile "
+             "WHERE is_cold_start = 1")
+    ).scalar() or 0.0
+
+    # 冷启动转化率: 从离线指标取最新一天的 coldstart_conversion
+    conv_row = db.session.execute(
+        text("SELECT coldstart_conversion FROM offline_metrics "
+             "WHERE user_group = 'coldstart' AND content_type = 'all' "
+             "AND metric_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) LIMIT 1")
+    ).fetchone()
+    conversion_rate = round(float(conv_row[0]) * 100, 1) if conv_row and conv_row[0] else 0.0
+
+    cluster_distribution = get_cluster_distribution()
+
+    # 推荐策略分布
+    strategy_rows = db.session.execute(
+        text("SELECT strategy, COUNT(*) as cnt FROM offline_recommendations "
+             "GROUP BY strategy ORDER BY cnt DESC")
+    ).fetchall()
+    strategy_names = {"als_cf": "ALS协同过滤", "coldstart": "冷启动策略", "established": "存量策略", "exploration": "探索策略", "content_based": "内容推荐", "hybrid": "混合推荐"}
+    strategy_distribution = [
+        {"name": strategy_names.get(r[0], r[0]), "value": r[1]}
+        for r in strategy_rows
+    ]
+
+    write_audit("query", "coldstart/stats")
+    return jsonify({
+        "code": 200,
+        "data": {
+            "total_coldstart_users_24h": total_cold,
+            "cluster_distribution": cluster_distribution,
+            "avg_behavior_count": float(avg_behavior),
+            "conversion_rate": conversion_rate,
+            "strategy_distribution": strategy_distribution,
+        },
     }), 200

@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "allow": [
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:5173/\" -UseBasicParsing -TimeoutSec 5 2>&1 | Select-Object StatusCode, StatusDescription)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(mvn package *)",
+      "PowerShell(Start-Process \"http://localhost:5173/dashboard\")",
+      "PowerShell(Get-Command *)",
+      "PowerShell(spark-submit *)",
+      "PowerShell(. .\\\\flask-backend\\\\venv\\\\Scripts\\\\Activate.ps1)",
+      "PowerShell(netstat *)"
+    ]
+  },
   "enabledMcpjsonServers": [
     "mysql"
   ]

@@ -29,10 +29,11 @@ def create_app(config_object=None) -> Flask:
     start_dashboard_push(app, interval=5.0)
     start_event_push(app, interval=2.0)
 
-    # Send cached events to new WebSocket clients on connect
+    # Send cached events only to the newly connected client
     @socketio.on("connect")
     def on_connect():
-        send_cached_events()
+        from flask import request
+        send_cached_events(sid=request.sid)
 
     return app
 

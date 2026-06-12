@@ -102,3 +102,25 @@ def refresh():
         return jsonify({"code": 200, "message": "Token refreshed", "data": result}), 200
     except ValueError as e:
         return jsonify({"code": 401, "message": str(e)}), 401
+
+
+@auth_bp.route("/send-verification", methods=["POST"])
+@jwt_required()
+def send_verification():
+    """Send email verification code to the authenticated user."""
+    from app.auth.services import get_current_user
+    from app.email_service.services import generate_verification_code, send_verification_email
+
+    user = get_current_user()
+    if not user:
+        return jsonify({"code": 404, "message": "User not found"}), 404
+    if user.is_verified:
+        return jsonify({"code": 400, "message": "Already verified"}), 400
+
+    code = generate_verification_code()
+    sent = send_verification_email(user.email, code)
+    if sent:
+        from app.utils.audit import write_audit
+        write_audit("send_verification", f"user:{user.username}")
+        return jsonify({"code": 200, "message": "Verification code sent"}), 200
+    return jsonify({"code": 500, "message": "Failed to send email"}), 500

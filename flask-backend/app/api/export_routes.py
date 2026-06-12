@@ -11,7 +11,7 @@ export_bp = Blueprint("export", __name__)
 
 def _query_table(table: str) -> list[dict]:
     allowed = {"offline_recommendations", "offline_metrics", "rt_content_hot",
-               "offline_user_portrait", "rt_user_profile"}
+               "offline_user_portrait", "rt_user_profile", "rt_coldstart_cluster"}
     if table not in allowed:
         return []
 
