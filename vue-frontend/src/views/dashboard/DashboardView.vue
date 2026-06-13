@@ -345,6 +345,7 @@ onMounted(async () => {
     dashboardStore.loadTrendData(),
     dashboardStore.loadHotContent(),
     dashboardStore.loadColdstartAnalysis(),
+    dashboardStore.loadRegionData(),
   ]);
 
   wsConnect();
@@ -367,11 +368,10 @@ onMounted(async () => {
         dashboardStore.clusterDistribution = d.cluster_distribution;
       }
       if (d.strategy_distribution && d.strategy_distribution.length > 0) {
-        const strategyNames = { als_cf: "ALS协同过滤", coldstart: "冷启动策略", established: "存量策略", exploration: "探索策略", content_based: "内容推荐", hybrid: "混合推荐" };
-        dashboardStore.strategyDistribution = d.strategy_distribution.map((s) => ({
-          ...s,
-          name: strategyNames[s.name] || s.name,
-        }));
+        dashboardStore.strategyDistribution = d.strategy_distribution;
+      }
+      if (d.content_ratio) {
+        dashboardStore.contentRatio = d.content_ratio;
       }
     }
   };

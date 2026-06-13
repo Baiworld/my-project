@@ -21,7 +21,8 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 object ALSTrainer {
 
   private val mapper = new ObjectMapper().registerModule(DefaultScalaModule)
-  val modelBasePath = "E:/TraeBD/models/als"
+  private val alsCfg = ConfigFactory.load().getConfig("als")
+  val modelBasePath = if (alsCfg.hasPath("model.path")) alsCfg.getString("model.path") else "models/als"
 
   /**
    * 训练 ALS 模型

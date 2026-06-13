@@ -38,7 +38,8 @@ object RealTimeAnalysisApp {
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 
     val ssc = new StreamingContext(conf, Seconds(10))  // 10 秒微批次间隔
-    ssc.checkpoint("E:/TraeBD/checkpoints/streaming-v2")
+    val ckptPath = if (cfg.hasPath("spark.checkpoint.path")) cfg.getString("spark.checkpoint.path") else "checkpoints/streaming-v2"
+    ssc.checkpoint(ckptPath)
 
     // ── 2. Kafka 消费配置 ──
     val groupId = if (cfg.hasPath("kafka.group.id")) cfg.getString("kafka.group.id") else "hybrid_rec_streaming"

@@ -78,6 +78,9 @@ const api = {
     getAnalysis: () => instance.get("/api/coldstart/analysis"),
     getStats: () => instance.get("/api/coldstart/stats"),
   },
+  region: {
+    getHeatmap: () => instance.get("/api/region/heatmap"),
+  },
   export: {
     download: async (table, format = "csv") => {
       const response = await instance.get(`/api/export/${table}`, {

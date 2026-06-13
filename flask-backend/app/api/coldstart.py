@@ -91,25 +91,41 @@ def get_coldstart_stats():
              "WHERE is_cold_start = 1")
     ).scalar() or 0.0
 
-    # 冷启动转化率: 从离线指标取最新一天的 coldstart_conversion
-    conv_row = db.session.execute(
-        text("SELECT coldstart_conversion FROM offline_metrics "
-             "WHERE user_group = 'coldstart' AND content_type = 'all' "
-             "AND metric_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) LIMIT 1")
-    ).fetchone()
-    conversion_rate = round(float(conv_row[0]) * 100, 1) if conv_row and conv_row[0] else 0.0
+    # 冷启动转化率: 实时计算冷启动用户中有播放行为的比例
+    conv_row = db.session.execute(text(
+        "SELECT ROUND(SUM(CASE WHEN play_sum > 0 THEN 1 ELSE 0 END) * 1.0 "
+        "/ NULLIF(COUNT(*), 0), 4) FROM ("
+        "  SELECT user_id, SUM(play_count) as play_sum "
+        "  FROM rt_user_profile WHERE is_cold_start = 1 GROUP BY user_id"
+        ") t"
+    )).fetchone()
+    if conv_row and conv_row[0]:
+        conversion_rate = round(float(conv_row[0]) * 100, 1)
+    else:
+        # 回退到离线指标
+        conv_row = db.session.execute(
+            text("SELECT coldstart_conversion FROM offline_metrics "
+                 "WHERE user_group = 'coldstart' AND content_type = 'all' "
+                 "ORDER BY metric_date DESC LIMIT 1")
+        ).fetchone()
+        conversion_rate = round(float(conv_row[0]) * 100, 1) if conv_row and conv_row[0] else 0.0
 
     cluster_distribution = get_cluster_distribution()
 
-    # 推荐策略分布
-    strategy_rows = db.session.execute(
-        text("SELECT strategy, COUNT(*) as cnt FROM offline_recommendations "
-             "GROUP BY strategy ORDER BY cnt DESC")
-    ).fetchall()
-    strategy_names = {"als_cf": "ALS协同过滤", "coldstart": "冷启动策略", "established": "存量策略", "exploration": "探索策略", "content_based": "内容推荐", "hybrid": "混合推荐"}
+    # 推荐策略分布 — 实时从用户画像计算
+    cold_cs = db.session.execute(text(
+        "SELECT COUNT(DISTINCT user_id) FROM rt_user_profile WHERE is_cold_start = 1"
+    )).scalar() or 0
+    est_cs = db.session.execute(text(
+        "SELECT COUNT(DISTINCT user_id) FROM rt_user_profile WHERE is_cold_start = 0 AND behavior_count > 50"
+    )).scalar() or 0
+    exp_cs = db.session.execute(text(
+        "SELECT COUNT(DISTINCT user_id) FROM rt_user_profile WHERE is_cold_start = 0 AND behavior_count <= 50"
+    )).scalar() or 0
     strategy_distribution = [
-        {"name": strategy_names.get(r[0], r[0]), "value": r[1]}
-        for r in strategy_rows
+        {"name": "冷启动策略", "value": cold_cs},
+        {"name": "存量策略", "value": est_cs},
+        {"name": "探索策略", "value": exp_cs},
     ]
 
     write_audit("query", "coldstart/stats")

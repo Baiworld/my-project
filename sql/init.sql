@@ -122,25 +122,6 @@ CREATE TABLE offline_user_portrait (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------------
--- offline_content_sim — 内容相似度矩阵
--- FR-07: SimilarityMatrix 余弦相似度计算输出
--- --------------------------------------------------------------------------
-CREATE TABLE offline_content_sim (
-    id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    content_id_a   BIGINT UNSIGNED NOT NULL,
-    content_id_b   BIGINT UNSIGNED NOT NULL,
-    content_type   ENUM('music','video') NOT NULL,
-    similarity     DECIMAL(6,5) NOT NULL,
-    sim_dimensions JSON DEFAULT NULL,
-    compute_time   DATETIME(3) NOT NULL,
-    created_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    PRIMARY KEY (id),
-    INDEX idx_a_type_sim (content_id_a, content_type, similarity DESC),
-    INDEX idx_b_type (content_id_b, content_type),
-    UNIQUE KEY uk_pair (content_id_a, content_id_b, content_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------------------------
 -- offline_recommendations — 离线推荐结果
 -- FR-08: HybridRecommender 混合推荐输出
 -- --------------------------------------------------------------------------
@@ -305,7 +286,6 @@ END //
 CREATE PROCEDURE clean_offline_tables()
 BEGIN
     DELETE FROM offline_user_portrait WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
-    DELETE FROM offline_content_sim   WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
     DELETE FROM offline_metrics       WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
 END //
 

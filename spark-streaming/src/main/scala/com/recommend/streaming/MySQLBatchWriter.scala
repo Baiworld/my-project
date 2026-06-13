@@ -192,7 +192,7 @@ object MySQLBatchWriter extends Serializable {
             ps.setString(3, m.title)
             ps.setString(4, m.artistOrAuthor)
             ps.setString(5, m.styleOrCategory)
-            ps.setString(6, if (m.tags != null) m.tags.mkString("[", "\"", "\"]") else "[]")
+            ps.setString(6, if (m.tags != null) m.tags.map(t => s""""$t"""").mkString("[", ",", "]") else "[]")
             ps.setDouble(7, m.duration)
             ps.setString(8, m.language)
             ps.setDouble(9, m.bpm)

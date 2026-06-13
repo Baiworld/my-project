@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div ref="chartRef" class="chart-box"></div>
 </template>
 
@@ -14,16 +14,11 @@ const emit = defineEmits(["item-click"]);
 
 const chartRef = ref(null);
 let chartInstance = null;
+let topData = [];
 
-function initChart() {
-  if (!chartRef.value || !props.data.length) return;
-
-  if (chartInstance) chartInstance.dispose();
-  chartInstance = echarts.init(chartRef.value);
-
-  const topData = props.data.slice(0, 10).reverse();
-
-  const option = {
+function buildOption() {
+  topData = props.data.slice(0, 10).reverse();
+  return {
     backgroundColor: "transparent",
     grid: { left: 80, right: 20, top: 10, bottom: 40 },
     tooltip: {
@@ -57,9 +52,16 @@ function initChart() {
       },
     }],
   };
+}
 
-  chartInstance.setOption(option);
-  chartInstance.off("click");
+function updateChart() {
+  if (!chartInstance || !chartRef.value) return;
+  chartInstance.setOption(buildOption());
+}
+
+function initChart() {
+  if (!chartRef.value) return;
+  chartInstance = echarts.init(chartRef.value);
   chartInstance.on("click", (params) => {
     if (params.componentType === "series") {
       const idx = topData.length - 1 - params.dataIndex;
@@ -67,6 +69,7 @@ function initChart() {
       if (item) emit("item-click", item);
     }
   });
+  updateChart();
 }
 
 function handleResize() { chartInstance?.resize(); }
@@ -76,7 +79,7 @@ onMounted(() => {
   window.addEventListener("resize", handleResize);
 });
 
-watch(() => props.data, () => { initChart(); }, { deep: true });
+watch(() => props.data, () => { updateChart(); }, { deep: true });
 
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
@@ -87,5 +90,3 @@ onUnmounted(() => {
 <style scoped>
 .chart-box { width: 100%; height: 260px; }
 </style>
-
-

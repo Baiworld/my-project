@@ -66,22 +66,47 @@ def _fetch_dashboard_snapshot() -> dict:
             rt_avg_watch = fallback_watch
 
         hot_top5 = db.session.execute(
-            db.text("SELECT content_id, content_type, hot_score FROM rt_content_hot "
-            "ORDER BY hot_score DESC LIMIT 5")
+            db.text("SELECT content_id, content_type, MAX(hot_score) as hot_score FROM rt_content_hot "
+            "GROUP BY content_id, content_type ORDER BY MAX(hot_score) DESC LIMIT 5")
         ).fetchall()
 
         coldstart_count = db.session.execute(
             db.text("SELECT COUNT(*) FROM rt_user_profile "
-            "WHERE is_cold_start = 1")
+            "WHERE is_cold_start = 1 AND window_end >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
         ).scalar() or 0
 
-        # CTR trend (last 7 days)
-        ctr_trend = db.session.execute(
+        # CTR trend (last 7 days) — 离线 + 实时混合，保证每天都有数据
+        offline_ctr = db.session.execute(
             db.text("SELECT metric_date, ctr FROM offline_metrics "
             "WHERE user_group = 'all' AND content_type = 'all' "
             "AND metric_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) "
             "ORDER BY metric_date")
         ).fetchall()
+        offline_dates = {str(r[0]) for r in offline_ctr}
+        ctr_trend = list(offline_ctr)
+
+        # 对最近7天中没有离线数据的日期，从 rt_user_profile 实时计算补全
+        # 使用与 /api/metrics 一致的 CTR 公式: active_rows / (total_rows * 10)
+        rt_ctr_rows = db.session.execute(
+            db.text("""
+                SELECT DATE(window_end) as d,
+                       COUNT(*) as total_rows,
+                       SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END) as active_rows
+                FROM rt_user_profile
+                WHERE window_end >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                GROUP BY DATE(window_end) ORDER BY d
+            """)
+        ).fetchall()
+        for r in rt_ctr_rows:
+            d = str(r[0])
+            if d not in offline_dates:
+                total_rows = int(r[1])
+                active_rows = int(r[2])
+                est_impressions = total_rows * 10
+                rt_ctr = round(active_rows / est_impressions, 4) if est_impressions > 0 else 0
+                if rt_ctr > 0:
+                    ctr_trend.append((r[0], rt_ctr))
+        ctr_trend.sort(key=lambda x: str(x[0]))
 
         # Cluster distribution (with semantic names from interest tags)
         cluster_dist = get_cluster_distribution()
@@ -96,22 +121,53 @@ def _fetch_dashboard_snapshot() -> dict:
             "WHERE content_type = 'video'")
         ).scalar() or 0
 
-        # 推荐策略分布
+        # 推荐策略分布 — 基于冷启动聚类实时计算
+        strategy_names = {"als_cf": "ALS协同过滤", "coldstart": "冷启动策略", "established": "存量策略", "exploration": "探索策略", "content_based": "内容推荐", "hybrid": "混合推荐"}
+        # 先尝试离线表，为空时使用聚类分布
         strategy_rows = db.session.execute(
             db.text("SELECT strategy, COUNT(*) as cnt FROM offline_recommendations "
             "GROUP BY strategy ORDER BY cnt DESC")
         ).fetchall()
-        strategy_distribution = [
-            {"name": r[0], "value": r[1]} for r in strategy_rows
-        ]
+        if strategy_rows:
+            strategy_distribution = [
+                {"name": strategy_names.get(r[0], r[0]), "value": r[1]} for r in strategy_rows
+            ]
+        else:
+            # 实时：从冷启动聚类 + 用户画像推算
+            cold_cs = db.session.execute(db.text(
+                "SELECT COUNT(*) FROM rt_user_profile WHERE is_cold_start = 1"
+            )).scalar() or 0
+            est_cs = db.session.execute(db.text(
+                "SELECT COUNT(*) FROM rt_user_profile WHERE is_cold_start = 0 AND behavior_count > 50"
+            )).scalar() or 0
+            exp_cs = db.session.execute(db.text(
+                "SELECT COUNT(*) FROM rt_user_profile WHERE is_cold_start = 0 AND behavior_count <= 50"
+            )).scalar() or 0
+            strategy_distribution = [
+                {"name": "冷启动策略", "value": cold_cs},
+                {"name": "存量策略", "value": est_cs},
+                {"name": "探索策略", "value": exp_cs},
+            ]
+
+        # 覆盖率 & 多样性 — 实时计算
+        cov_row = db.session.execute(db.text(
+            "SELECT (SELECT COUNT(DISTINCT content_id) FROM rt_content_hot) as covered, "
+            "(SELECT COUNT(*) FROM content_metadata) as total"
+        )).fetchone()
+        real_coverage = round(float(cov_row[0]) / max(cov_row[1], 1), 4) if cov_row else 0.0
+        div_rows = db.session.execute(db.text(
+            "SELECT content_type, COUNT(*) as cnt FROM rt_content_hot GROUP BY content_type"
+        )).fetchall()
+        total_hot = sum(r[1] for r in div_rows)
+        real_diversity = round(1 - sum((r[1] / total_hot) ** 2 for r in div_rows), 4) if total_hot > 0 else 0.0
 
         return {
             "online_users": online_users,
             "daily_recommendations": daily_recs,
             "ctr": float(rt_ctr) if rt_ctr else 0.0,
             "avg_watch_duration": float(rt_avg_watch) if rt_avg_watch else 0.0,
-            "coverage": float(offline_row.coverage) if offline_row and offline_row.coverage else 0.0,
-            "diversity": float(offline_row.diversity) if offline_row and offline_row.diversity else 0.0,
+            "coverage": real_coverage,
+            "diversity": real_diversity,
             "hot_content_top5": [
                 {"content_id": r[0], "content_type": r[1], "hot_score": float(r[2])}
                 for r in hot_top5

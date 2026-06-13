@@ -47,6 +47,7 @@ def _register_blueprints(app: Flask):
     from app.api.coldstart import coldstart_bp
     from app.api.export_routes import export_bp
     from app.api.admin import admin_bp
+    from app.api.region import region_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(recommendations_bp, url_prefix="/api")
@@ -56,6 +57,7 @@ def _register_blueprints(app: Flask):
     app.register_blueprint(coldstart_bp, url_prefix="/api")
     app.register_blueprint(export_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/api")
+    app.register_blueprint(region_bp, url_prefix="/api")
 
 
 def _register_error_handlers(app: Flask):

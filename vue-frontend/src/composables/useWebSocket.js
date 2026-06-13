@@ -1,7 +1,7 @@
 import { ref, onUnmounted } from "vue";
 import { io } from "socket.io-client";
 
-const SERVER_URL = "http://localhost:5000";
+const SERVER_URL = import.meta.env.VITE_WS_URL || window.location.origin.replace("5173", "5000");
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 const HEARTBEAT_INTERVAL_MS = 25000;

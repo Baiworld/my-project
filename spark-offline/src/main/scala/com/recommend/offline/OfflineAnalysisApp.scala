@@ -8,7 +8,6 @@ import org.apache.spark.sql.SparkSession
  *
  * 支持的作业:
  * - portrait:   用户全量画像构建 (FR-06)
- * - similarity: 内容相似度矩阵计算 (FR-07)
  * - als-train:  ALS 协同过滤模型训练
  * - recommend:  混合推荐结果生成 (FR-08)
  * - metrics:    推荐效果指标计算 (FR-09)
@@ -34,23 +33,20 @@ object OfflineAnalysisApp {
 
     job match {
       case "portrait"     => UserPortraitBuilder.build(spark)
-      case "similarity"   => SimilarityMatrix.compute(spark)
       case "als-train"    => ALSTrainer.train(spark)
       case "recommend"    => HybridRecommender.run(spark)
       case "metrics"      => MetricsCalculator.calculate(spark)
       case "all"          =>
-        println("\n[1/5] 构建用户画像...")
+        println("\n[1/4] 构建用户画像...")
         UserPortraitBuilder.build(spark)
-        println("\n[2/5] 计算相似度矩阵...")
-        SimilarityMatrix.compute(spark)
-        println("\n[3/5] 训练 ALS 模型...")
+        println("\n[2/4] 训练 ALS 模型...")
         ALSTrainer.train(spark)
-        println("\n[4/5] 生成混合推荐结果...")
+        println("\n[3/4] 生成混合推荐结果...")
         HybridRecommender.run(spark)
-        println("\n[5/5] 计算推荐效果指标...")
+        println("\n[4/4] 计算推荐效果指标...")
         MetricsCalculator.calculate(spark)
       case _ =>
-        println(s"未知的 job 参数: $job，可用: portrait | similarity | als-train | recommend | metrics | all")
+        println(s"未知的 job 参数: $job，可用: portrait | als-train | recommend | metrics | all")
     }
 
     println("\n" + "=" * 60)

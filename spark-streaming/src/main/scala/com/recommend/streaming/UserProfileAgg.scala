@@ -72,8 +72,8 @@ object UserProfileAgg extends Serializable {
     val typeRatio = calcContentTypeRatio(events)         // 内容类型比例
 
     val epoch = System.currentTimeMillis()
-    val windowStart = if (events.nonEmpty) events.map(_.eventTime).min else epoch - 300000L
-    val windowEnd   = if (events.nonEmpty) events.map(_.eventTime).max else epoch
+    val windowStart = epoch - windowDurationMs
+    val windowEnd   = epoch
 
     UserProfile(
       userId                 = userId,

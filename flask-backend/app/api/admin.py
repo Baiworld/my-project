@@ -148,9 +148,12 @@ def delete_user(user_id):
     return jsonify({"code": 200, "message": "User deleted"}), 200
 
 
-# ── 系统设置 ──
+# ── 系统设置（持久化到 JSON 文件，重启不丢失） ──
 
-_settings_cache = {
+import json, os
+
+_settings_file = os.path.join(os.path.dirname(__file__), "..", "..", "settings.json")
+_defaults = {
     "refreshInterval": 6,
     "recommendCount": 20,
     "clusterCount": 8,
@@ -158,19 +161,35 @@ _settings_cache = {
 }
 
 
+def _load_settings():
+    try:
+        with open(_settings_file, "r", encoding="utf-8") as f:
+            saved = json.load(f)
+        return {**_defaults, **saved}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return dict(_defaults)
+
+
+def _save_settings(data):
+    with open(_settings_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 @admin_bp.route("/settings", methods=["PUT", "GET"])
 @require_role("admin")
 def system_settings():
     if request.method == "GET":
-        return jsonify({"code": 200, "data": _settings_cache}), 200
+        return jsonify({"code": 200, "data": _load_settings()}), 200
 
+    current = _load_settings()
     data = request.get_json(silent=True) or {}
-    for key in _settings_cache:
+    for key in _defaults:
         if key in data:
-            _settings_cache[key] = data[key]
+            current[key] = data[key]
+    _save_settings(current)
     write_audit("update_settings", "system", data)
 
-    return jsonify({"code": 200, "message": "Settings saved", "data": _settings_cache}), 200
+    return jsonify({"code": 200, "message": "Settings saved", "data": current}), 200
 
 
 # ── 审计日志查询 ──

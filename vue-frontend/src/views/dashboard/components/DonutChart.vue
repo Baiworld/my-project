@@ -15,11 +15,7 @@ let chartInstance = null;
 
 const warmColors = ["#E8784A", "#F0A080", "#E8A040", "#C88030", "#D08060", "#F5C0A0"];
 
-function initChart() {
-  if (!chartRef.value || !props.data.length) return;
-  if (chartInstance) chartInstance.dispose();
-  chartInstance = echarts.init(chartRef.value);
-
+function buildOption() {
   const total = props.data.reduce((s, d) => s + (d.value || 0), 0) || 1;
 
   const slices = props.data.map((d, i) => ({
@@ -28,7 +24,7 @@ function initChart() {
     itemStyle: { color: warmColors[i % warmColors.length] },
   }));
 
-  const option = {
+  return {
     backgroundColor: "transparent",
     tooltip: {
       trigger: "item",
@@ -62,8 +58,17 @@ function initChart() {
       data: slices,
     }],
   };
+}
 
-  chartInstance.setOption(option);
+function updateChart() {
+  if (!chartInstance || !chartRef.value) return;
+  chartInstance.setOption(buildOption());
+}
+
+function initChart() {
+  if (!chartRef.value) return;
+  chartInstance = echarts.init(chartRef.value);
+  updateChart();
 }
 
 function handleResize() { chartInstance?.resize(); }
@@ -73,7 +78,7 @@ onMounted(() => {
   window.addEventListener("resize", handleResize);
 });
 
-watch(() => props.data, () => { initChart(); }, { deep: true });
+watch(() => props.data, () => { updateChart(); }, { deep: true });
 
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);

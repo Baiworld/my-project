@@ -9,7 +9,8 @@
       "PowerShell(Get-Command *)",
       "PowerShell(spark-submit *)",
       "PowerShell(. .\\\\flask-backend\\\\venv\\\\Scripts\\\\Activate.ps1)",
-      "PowerShell(netstat *)"
+      "PowerShell(netstat *)",
+      "PowerShell(Get-NetTCPConnection *)"
     ]
   },
   "enabledMcpjsonServers": [

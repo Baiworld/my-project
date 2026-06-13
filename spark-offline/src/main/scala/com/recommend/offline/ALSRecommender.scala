@@ -2,6 +2,7 @@ package com.recommend.offline
 
 import org.apache.spark.ml.recommendation.ALSModel
 import org.apache.spark.sql.SparkSession
+import com.typesafe.config.ConfigFactory
 import org.apache.spark.sql.functions._
 
 /**
@@ -13,7 +14,8 @@ import org.apache.spark.sql.functions._
  */
 object ALSRecommender {
 
-  private val modelBasePath = "E:/TraeBD/models/als"
+  private val alsCfg = ConfigFactory.load().getConfig("als")
+  private val modelBasePath = if (alsCfg.hasPath("model.path")) alsCfg.getString("model.path") else "models/als"
 
   /** 检查训练好的 ALS 模型是否存在 */
   def modelExists: Boolean = {

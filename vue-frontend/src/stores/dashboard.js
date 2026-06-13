@@ -41,9 +41,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   const eventLogs = ref([]);
 
+  const contentRatio = ref({ music: 0, video: 0 });
+
   const musicVideoRatio = computed(() => {
-    const music = hotContent.value.filter((c) => c.content_type === "music").length;
-    const video = hotContent.value.filter((c) => c.content_type === "video").length;
+    const music = contentRatio.value.music || hotContent.value.filter((c) => c.content_type === "music").length;
+    const video = contentRatio.value.video || hotContent.value.filter((c) => c.content_type === "video").length;
     const total = music + video || 1;
     return {
       music: Math.round((music / total) * 100),
@@ -53,12 +55,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   async function loadMetrics() {
     try {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const dayBefore = new Date();
-      dayBefore.setDate(dayBefore.getDate() - 2);
-      const endStr = yesterday.toISOString().split("T")[0];
-      const startStr = dayBefore.toISOString().split("T")[0];
+      const today = new Date();
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const endStr = today.toISOString().split("T")[0];
+      const startStr = weekAgo.toISOString().split("T")[0];
 
       const response = await api.metrics.get({
         start_date: startStr,
@@ -67,8 +68,10 @@ export const useDashboardStore = defineStore("dashboard", () => {
       const payload = response.data.data;
       const pick = (d, ug, ct) => d.user_group === ug && d.content_type === ct;
 
-      const todayRow = payload.find((d) => pick(d, "all", "all"));
-      const prevRow = payload.find((d) => d.metric_date === startStr && pick(d, "all", "all"));
+      // 取最新日期的 all/all 行
+      const sorted = [...payload].sort((a, b) => b.metric_date.localeCompare(a.metric_date));
+      const todayRow = sorted.find((d) => pick(d, "all", "all"));
+      const prevRow = sorted.filter((d) => pick(d, "all", "all"))[1];
       if (todayRow) {
         metrics.value = {
           onlineUsers: todayRow.total_users || 0,
@@ -78,17 +81,19 @@ export const useDashboardStore = defineStore("dashboard", () => {
           coverage: todayRow.coverage || 0,
         };
       }
-      // Strategy comparison: latest day coldstart vs existing
-      const csAll = payload.find((d) => d.metric_date === endStr && pick(d, "coldstart", "all"));
-      const exAll = payload.find((d) => d.metric_date === endStr && pick(d, "existing", "all"));
-      if (csAll || exAll) {
-        compareData.value = {
-          coldstart: csAll ? { ctr: csAll.ctr || 0, cvr: csAll.cvr || 0, avg_watch_duration: csAll.avg_watch_duration || 0 } : {},
-          existing: exAll ? { ctr: exAll.ctr || 0, cvr: exAll.cvr || 0, avg_watch_duration: exAll.avg_watch_duration || 0 } : {},
-        };
+      // 冷启动 vs 存量对比: 取最新同时包含两组数据的日期
+      const latestDate = sorted[0]?.metric_date;
+      if (latestDate) {
+        const csAll = payload.find((d) => d.metric_date === latestDate && pick(d, "coldstart", "all"));
+        const exAll = payload.find((d) => d.metric_date === latestDate && pick(d, "existing", "all"));
+        if (csAll || exAll) {
+          compareData.value = {
+            coldstart: csAll ? { ctr: csAll.ctr || 0, cvr: csAll.cvr || 0, avg_watch_duration: csAll.avg_watch_duration || 0 } : {},
+            existing: exAll ? { ctr: exAll.ctr || 0, cvr: exAll.cvr || 0, avg_watch_duration: exAll.avg_watch_duration || 0 } : {},
+          };
+        }
       }
 
-      // Compute conversion funnel from the all/all row
       if (todayRow) {
         const imp = todayRow.total_impressions || 1;
         const clk = todayRow.total_clicks || 0;
@@ -179,6 +184,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }
   }
 
+  async function loadRegionData() {
+    try {
+      const response = await api.region.getHeatmap();
+      regionData.value = response.data.data?.points || [];
+    } catch (error) {
+      console.error("Failed to load region data:", error);
+    }
+  }
+
   function addEventLog(log) {
     eventLogs.value.unshift({
       ...log,
@@ -205,11 +219,13 @@ export const useDashboardStore = defineStore("dashboard", () => {
     compareData,
     regionData,
     eventLogs,
+    contentRatio,
     musicVideoRatio,
     loadMetrics,
     loadTrendData,
     loadHotContent,
     loadColdstartAnalysis,
+    loadRegionData,
     addEventLog,
     clearEventLogs,
   };

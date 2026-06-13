@@ -32,19 +32,23 @@ def list_content():
 
     rows = db.session.execute(
         text(
-            f"SELECT c.content_id, c.content_type, c.hot_score, c.play_count, c.like_count, "
-            f"c.favorite_count, c.share_count, c.completion_rate, c.interaction_rate, "
-            f"COALESCE(m.title, CONCAT(IF(c.content_type='music','音乐','视频'), ' #', c.content_id)) AS title "
+            f"SELECT c.content_id, c.content_type, MAX(c.hot_score) as hot_score, MAX(c.play_count) as play_count, "
+            f"MAX(c.like_count) as like_count, MAX(c.favorite_count) as favorite_count, "
+            f"MAX(c.share_count) as share_count, AVG(c.completion_rate) as completion_rate, "
+            f"AVG(c.interaction_rate) as interaction_rate, "
+            f"COALESCE(MAX(m.title), CONCAT(IF(MAX(c.content_type)='music','音乐','视频'), ' #', MAX(c.content_id))) AS title "
             f"FROM rt_content_hot c "
             f"LEFT JOIN content_metadata m ON c.content_id = m.content_id AND c.content_type = m.content_type "
             f"WHERE {where_clause} "
-            f"ORDER BY c.hot_score DESC LIMIT :limit OFFSET :offset"
+            f"GROUP BY c.content_id, c.content_type "
+            f"ORDER BY MAX(c.hot_score) DESC LIMIT :limit OFFSET :offset"
         ),
         {**params, "limit": size, "offset": offset},
     ).fetchall()
 
     total = db.session.execute(
-        text(f"SELECT COUNT(*) FROM rt_content_hot c WHERE {where_clause}"),
+        text(f"SELECT COUNT(DISTINCT c.content_id, c.content_type) FROM rt_content_hot c "
+             f"WHERE {where_clause}"),
         params,
     ).scalar()
 
@@ -77,10 +81,11 @@ def get_hot_content():
     top_n = min(max(int(request.args.get("top_n", 10)), 1), 100)
 
     sql = (
-        "SELECT h.content_id, h.content_type, h.play_count, h.like_count, "
-        "h.favorite_count, h.share_count, h.completion_rate, "
-        "h.interaction_rate, h.hot_score, "
-        "COALESCE(m.title, CONCAT(IF(h.content_type='music','音乐','视频'), ' #', h.content_id)) AS title "
+        "SELECT h.content_id, h.content_type, MAX(h.play_count) as play_count, MAX(h.like_count) as like_count, "
+        "MAX(h.favorite_count) as favorite_count, MAX(h.share_count) as share_count, "
+        "AVG(h.completion_rate) as completion_rate, AVG(h.interaction_rate) as interaction_rate, "
+        "MAX(h.hot_score) as hot_score, "
+        "COALESCE(MAX(m.title), CONCAT(IF(MAX(h.content_type)='music','音乐','视频'), ' #', MAX(h.content_id))) AS title "
         "FROM rt_content_hot h "
         "LEFT JOIN content_metadata m ON h.content_id = m.content_id AND h.content_type = m.content_type "
     )
@@ -94,7 +99,7 @@ def get_hot_content():
     if where:
         sql += " WHERE " + " AND ".join(where)
 
-    sql += " ORDER BY h.hot_score DESC LIMIT :top_n"
+    sql += " GROUP BY h.content_id, h.content_type ORDER BY MAX(h.hot_score) DESC LIMIT :top_n"
     params["top_n"] = top_n
 
     rows = db.session.execute(text(sql), params).fetchall()

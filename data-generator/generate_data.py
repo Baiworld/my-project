@@ -12,8 +12,9 @@
   user_register        data/user_register.json         用户注册事件
 
 用法:
-  python generate_data.py                    # 生成全部 3 个文件
-  python generate_data.py --topic user_behavior  # 仅生成指定 topic
+  python generate_data.py                         # 批量生成 3×10,000 条
+  python generate_data.py --topic user_behavior   # 仅生成指定 topic
+  python generate_data.py --continuous --rate 5   # 持续生成，每秒 5 条 (Ctrl+C 停止)
 """
 
 import json
@@ -205,7 +206,7 @@ def generate_user_behavior(index: int) -> dict:
 
     device = _pick(DEVICES)
     event_time = datetime.utcnow() - timedelta(
-        seconds=random.randint(0, 86400 * 7))  # 过去 7 天
+        seconds=random.randint(0, 600))  # 最近 10 分钟（实时数据）
 
     return {
         "event_id": f"evt_{event_time.strftime('%Y%m%d%H%M%S')}_{index:06x}",
@@ -278,7 +279,7 @@ def generate_user_register(index: int) -> dict:
     username = f"{surname}{given}{random.randint(1, 9999)}"
     device = _pick(DEVICES)
     register_time = datetime.utcnow() - timedelta(
-        seconds=random.randint(0, 365 * 24 * 3600))  # 过去 1 年
+        seconds=random.randint(0, 86400 * 7))  # 过去 7 天（注册时间可以分散一些）
     interest_tags = _pick_n(MUSIC_TAGS + VIDEO_CATEGORIES, random.randint(2, 5))
 
     return {
@@ -365,6 +366,71 @@ TOPIC_GENERATORS = {
 
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
+
+    # 持续生成模式: python generate_data.py --continuous [--rate 5]
+    if "--continuous" in sys.argv or "-c" in sys.argv:
+        rate_idx = None
+        if "--rate" in sys.argv:
+            rate_idx = sys.argv.index("--rate")
+        elif "-r" in sys.argv:
+            rate_idx = sys.argv.index("-r")
+        rate_per_sec = int(sys.argv[rate_idx + 1]) if rate_idx and rate_idx + 1 < len(sys.argv) else 3
+
+        output_dir = os.environ.get("FLUME_OUTPUT_DIR", "/opt/data-generator/output")
+        os.makedirs(output_dir, exist_ok=True)
+        behavior_log = os.path.join(output_dir, "user_behavior.log")
+        metadata_log = os.path.join(output_dir, "content_metadata.log")
+        register_log = os.path.join(output_dir, "user_register.log")
+
+        print(f"[持续生成] 速率: {rate_per_sec} 条/秒")
+        print(f"[持续生成] 写入: {behavior_log}")
+        print(f"[持续生成] 写入: {metadata_log}")
+        print(f"[持续生成] 写入: {register_log}")
+        print("[持续生成] Ctrl+C 停止")
+
+        user_idx = 0
+        music_idx = 0
+        video_idx = 0
+        try:
+            while True:
+                t_start = time.time()
+                for _ in range(rate_per_sec):
+                    # 用户行为 (主流量)
+                    user_idx += 1
+                    event = generate_user_behavior(user_idx)
+                    # 使用当前时间覆盖 event_time
+                    now = datetime.utcnow()
+                    event["event_time"] = now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+                    event["session_id"] = f"sess_{int(time.time() * 1000)}_{random.randint(10000000, 99999999)}"
+                    with open(behavior_log, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+                    # 用户注册 (偶尔产生)
+                    if random.random() < 0.15:
+                        user_idx += 1
+                        reg = generate_user_register(user_idx)
+                        now2 = datetime.utcnow()
+                        reg["register_time"] = now2.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now2.microsecond // 1000:03d}Z"
+                        with open(register_log, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(reg, ensure_ascii=False) + "\n")
+
+                    # 内容元数据 (偶尔有新内容)
+                    if random.random() < 0.05:
+                        music_idx += 1
+                        cid = MUSIC_IDS[music_idx % len(MUSIC_IDS)]
+                        meta = generate_music_metadata(cid) if random.random() < 0.6 else generate_video_metadata(VIDEO_IDS[video_idx % len(VIDEO_IDS)])
+                        if meta["content_type"] == "video":
+                            video_idx += 1
+                        meta["action"] = "create"
+                        with open(metadata_log, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+
+                elapsed = time.time() - t_start
+                if elapsed < 1.0:
+                    time.sleep(1.0 - elapsed)
+        except KeyboardInterrupt:
+            print("\n[持续生成] 已停止")
+        return
 
     # 支持 --topic 参数只生成指定 topic
     if "--topic" in sys.argv:

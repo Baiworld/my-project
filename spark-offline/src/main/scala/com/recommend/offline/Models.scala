@@ -3,8 +3,7 @@ package com.recommend.offline
 /**
  * 离线分析数据模型 — 定义所有离线 Job 的输入输出数据结构
  *
- * 对应 MySQL 表: offline_user_portrait / offline_content_sim /
- *               offline_recommendations / offline_metrics
+ * 对应 MySQL 表: offline_user_portrait / offline_recommendations / offline_metrics
  */
 
 /** 实时用户画像行 — 对应 rt_user_profile 表，由 Spark Streaming 写入，离线 Job 读取 */
@@ -30,12 +29,6 @@ case class UserPortrait(
 case class ContentFeature(
   content_id: Long, content_type: String, style_or_category: String,
   tags: Seq[String], duration: Double, language: String, bpm: Double
-)
-
-/** 内容相似度记录 — 对应 offline_content_sim 表，FR-07 相似度矩阵计算结果 */
-case class ContentSim(
-  content_id_a: Long, content_id_b: Long, content_type: String,
-  similarity: Double, compute_time: java.sql.Timestamp
 )
 
 /**
