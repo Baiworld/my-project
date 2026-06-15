@@ -1,5 +1,7 @@
 """Flask application factory"""
 
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_cors import CORS
 from app.extensions import db, jwt, socketio
@@ -14,8 +16,23 @@ def create_app(config_object=None) -> Flask:
 
     app.config.from_object(config_object)
 
+    # 文件日志（按大小滚动，最多 5 个文件，每个 10MB）
+    if not app.debug:
+        handler = RotatingFileHandler("logs/app.log", maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8")
+        handler.setFormatter(logging.Formatter(
+            '{"time":"%(asctime)s","level":"%(levelname)s","module":"%(module)s","msg":"%(message)s"}'
+        ))
+        handler.setLevel(logging.INFO)
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
+
     db.init_app(app)
     jwt.init_app(app)
+
+    # Register JWT token blocklist check (revoked tokens are rejected)
+    from app.extensions import is_token_revoked
+    jwt.token_in_blocklist_loader(is_token_revoked)
+
     CORS(app, origins=app.config.get("CORS_ORIGINS", "*"))
     socketio.init_app(app, cors_allowed_origins="*")
 

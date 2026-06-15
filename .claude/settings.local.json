@@ -10,7 +10,27 @@
       "PowerShell(spark-submit *)",
       "PowerShell(. .\\\\flask-backend\\\\venv\\\\Scripts\\\\Activate.ps1)",
       "PowerShell(netstat *)",
-      "PowerShell(Get-NetTCPConnection *)"
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(findstr *)",
+      "PowerShell(& \"E:\\\\TraeBD\\\\start_app.bat\")",
+      "PowerShell(python E:\\\\TraeBD\\\\test_ws.py)",
+      "PowerShell(pip install *)",
+      "PowerShell(python E:\\\\TraeBD\\\\check_tz.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\test_ws2.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\test_pusher.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\check_data.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\verify_hot.py)",
+      "PowerShell(taskkill *)",
+      "PowerShell(python E:\\\\TraeBD\\\\verify_ctr.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\test_event.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\check_db.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\test_fix.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\check_offline.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\test_strategy.py)",
+      "PowerShell(python E:\\\\TraeBD\\\\check_data_flow.py)",
+      "PowerShell(python -c \"import paramiko; print\\('OK'\\)\")",
+      "PowerShell(Start-Process -WindowStyle Minimized -FilePath \"cmd\" -ArgumentList \"/c\", \"cd /d E:\\\\TraeBD\\\\vue-frontend && npm run dev\")",
+      "PowerShell(Start-Process -WindowStyle Minimized -FilePath \"cmd\" -ArgumentList \"/c\", \"cd /d E:\\\\TraeBD\\\\flask-backend && python run.py\")"
     ]
   },
   "enabledMcpjsonServers": [

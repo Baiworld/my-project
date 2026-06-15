@@ -1,9 +1,11 @@
 <template>
-  <div ref="chartRef" class="chart-box-sm"></div>
+  <div ref="chartRef" class="chart-box-sm">
+    <div v-if="isEmpty" class="empty-state">暂无转化数据</div>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import * as echarts from "echarts";
 
 const props = defineProps({
@@ -13,15 +15,15 @@ const props = defineProps({
 const chartRef = ref(null);
 let chartInstance = null;
 
-const defaultData = [
-  { value: 100, name: "推荐曝光", itemStyle: { color: "#E8784A" } },
-  { value: 85, name: "用户点击", itemStyle: { color: "#F0A080" } },
-  { value: 65, name: "完播转化", itemStyle: { color: "#F5C0A0" } },
-  { value: 45, name: "冷启活跃", itemStyle: { color: "#E8A040" } },
-];
+const isEmpty = computed(() => !props.data || props.data.length === 0);
 
 function buildOption() {
-  const funnelData = props.data.length > 0 ? props.data : defaultData;
+  if (isEmpty.value) {
+    return {
+      backgroundColor: "transparent",
+      title: { text: "暂无数据", left: "center", top: "center", textStyle: { color: "#8B7268", fontSize: 14 } },
+    };
+  }
   return {
     backgroundColor: "transparent",
     tooltip: {
@@ -40,14 +42,14 @@ function buildOption() {
       labelLine: { length: 10, lineStyle: { width: 1, type: "solid" } },
       itemStyle: { borderColor: "#E8D8CC", borderWidth: 1 },
       emphasis: { label: { fontSize: 12 } },
-      data: funnelData,
+      data: props.data,
     }],
   };
 }
 
 function updateChart() {
   if (!chartInstance || !chartRef.value) return;
-  chartInstance.setOption(buildOption());
+  chartInstance.setOption(buildOption(), true);
 }
 
 function initChart() {
@@ -72,5 +74,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.chart-box-sm { width: 100%; height: 200px; }
+.chart-box-sm {
+  width: 100%;
+  height: 200px;
+  position: relative;
+}
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary, #8B7268);
+  font-size: var(--font-size-sm, 13px);
+}
 </style>

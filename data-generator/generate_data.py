@@ -35,9 +35,9 @@ RECORDS_PER_TOPIC = 10_000
 # 数据池（与 MockDataGenerator.scala 保持一致）
 # ============================================================================
 
-USER_IDS = [f"U{i:05d}" for i in range(1, RECORDS_PER_TOPIC + 1)]
-MUSIC_IDS = [f"M{i:05d}" for i in range(1, 6001)]
-VIDEO_IDS = [f"V{i:05d}" for i in range(1, 4001)]
+USER_IDS = [str(i) for i in range(1, RECORDS_PER_TOPIC + 1)]
+MUSIC_IDS = [str(i) for i in range(1, 6001)]
+VIDEO_IDS = [str(i) for i in range(6001, 10001)]
 
 # ── 音乐内容池 ──
 MUSIC_TITLES = [

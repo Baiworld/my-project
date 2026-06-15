@@ -2,7 +2,8 @@
 
 import re
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, unset_jwt_cookies
+from flask_jwt_extended import jwt_required, get_jwt
+from app.extensions import revoke_token
 from app.auth.services import register_user, login_user, refresh_access_token
 
 
@@ -89,9 +90,9 @@ def login():
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():
-    response = jsonify({"code": 200, "message": "Successfully logged out"})
-    unset_jwt_cookies(response)
-    return response, 200
+    jwt_payload = get_jwt()
+    revoke_token(jwt_payload)
+    return jsonify({"code": 200, "message": "Successfully logged out"}), 200
 
 
 @auth_bp.route("/refresh", methods=["POST"])

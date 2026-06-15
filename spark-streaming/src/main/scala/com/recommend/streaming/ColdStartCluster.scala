@@ -57,7 +57,15 @@ object ColdStartCluster extends Serializable {
    */
   def cluster(stream: DStream[UserRegisterEvent]): DStream[ClusterResult] = {
     stream.transform { rdd =>
-      val events = rdd.collect()  // 收集到 Driver（适用于中小规模数据）
+      // 安全限制：单批次超过 5000 条时截断并告警，防止 Driver OOM
+      val MAX_BATCH = 5000
+      val count = rdd.count()
+      val events = if (count > MAX_BATCH) {
+        println(s"[ColdStartCluster] WARNING: batch size $count exceeds limit $MAX_BATCH, truncating to latest $MAX_BATCH")
+        rdd.take(MAX_BATCH)
+      } else {
+        rdd.collect()
+      }
       if (events.isEmpty) {
         rdd.sparkContext.emptyRDD[ClusterResult]
       } else {

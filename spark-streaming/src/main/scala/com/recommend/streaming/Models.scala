@@ -77,7 +77,8 @@ case class UserProfile(
   activeHours:            String,   // JSON: 按小时的活跃分布
   isColdStart:            Boolean,  // behaviorCount <= 50 为冷启动
   behaviorCount:          Int,
-  contentTypeRatio:       String    // JSON: {"music": 0.6, "video": 0.4}
+  contentTypeRatio:       String,   // JSON: {"music": 0.6, "video": 0.4}
+  region:                 String    // 用户最近活跃地区 (CN-XX)
 )
 
 /** 实时内容热度 — 写入 rt_content_hot 表 */

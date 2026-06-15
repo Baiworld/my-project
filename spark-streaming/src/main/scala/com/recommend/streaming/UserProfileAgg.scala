@@ -70,6 +70,7 @@ object UserProfileAgg extends Serializable {
     val prefDist  = calcPreferenceDistribution(events)  // 偏好分布
     val activeHrs = calcActiveHours(events)              // 活跃时段
     val typeRatio = calcContentTypeRatio(events)         // 内容类型比例
+    val region    = calcRegion(events)                   // 用户地区（取最频繁的）
 
     val epoch = System.currentTimeMillis()
     val windowStart = epoch - windowDurationMs
@@ -90,7 +91,8 @@ object UserProfileAgg extends Serializable {
       activeHours            = mapper.writeValueAsString(activeHrs),
       isColdStart            = totalBehaviors <= coldStartThreshold,
       behaviorCount          = totalBehaviors,
-      contentTypeRatio       = mapper.writeValueAsString(typeRatio)
+      contentTypeRatio       = mapper.writeValueAsString(typeRatio),
+      region                 = region
     )
   }
 
@@ -125,6 +127,13 @@ object UserProfileAgg extends Serializable {
       "music" -> round4(musicCount / total),
       "video" -> round4((playEvents.size - musicCount) / total)
     )
+  }
+
+  /** 从事件中提取最频繁的地区代码 */
+  private def calcRegion(events: Seq[UserBehaviorEvent]): String = {
+    val regions = events.map(_.region).filter(r => r != null && r.nonEmpty && r.startsWith("CN-"))
+    if (regions.isEmpty) ""
+    else regions.groupBy(identity).maxBy(_._2.size)._1
   }
 
   /** 保留 4 位小数 */

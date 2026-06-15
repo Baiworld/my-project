@@ -92,16 +92,78 @@ def _event_loop(interval: float = 2.0):
     with _app.app_context():
         # Process all existing data first
         _poll_and_push()
+        db.session.remove()
         while _push_running:
             _poll_and_push()
+            db.session.remove()
             time.sleep(interval)
 
 
+def _seed_recent_events():
+    """从数据库加载最近 20 条有行为的事件到缓存，新客户端连接即可看到"""
+    global _recent_events
+    try:
+        rows = db.session.execute(
+            db.text(
+                "SELECT id, user_id, play_count, like_rate, favorite_rate, "
+                "share_count, comment_count, content_type_ratio "
+                "FROM rt_user_profile "
+                "WHERE play_count > 0 OR like_rate > 0 OR favorite_rate > 0 "
+                "OR share_count > 0 OR comment_count > 0 "
+                "ORDER BY id DESC LIMIT 20"
+            )
+        ).fetchall()
+        import json
+        for row in reversed(rows):
+            rid, user_id, play_count, like_rate, fav_rate, share, comment, ratio = row
+            content_type = "音乐"
+            if ratio:
+                try:
+                    r = json.loads(ratio) if isinstance(ratio, str) else ratio
+                    if isinstance(r, dict) and r.get("video", 0) > 0.5:
+                        content_type = "视频"
+                except Exception:
+                    pass
+            events = []
+            if play_count and play_count > 0:
+                events.append(("播放", play_count))
+            if like_rate and float(like_rate) > 0:
+                events.append(("点赞", int(float(like_rate) * 100)))
+            if fav_rate and float(fav_rate) > 0:
+                events.append(("收藏", int(float(fav_rate) * 100)))
+            if share and int(share) > 0:
+                events.append(("分享", int(share)))
+            if comment and int(comment) > 0:
+                events.append(("评论", int(comment)))
+            for event_type, count in events:
+                from datetime import datetime, timezone
+                _recent_events.append({
+                    "type": "user_event",
+                    "data": {
+                        "user_id": user_id,
+                        "event_type": event_type,
+                        "content_type": content_type,
+                        "content_id": rid,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
+                })
+    except Exception as e:
+        print(f"[EventLogPusher] Seed cache error: {e}")
+
+
 def start_event_push(app, interval: float = 2.0):
-    global _push_running, _push_thread, _app
+    global _push_running, _push_thread, _app, _last_event_id
     if _push_running:
         return
     _app = app
+    with app.app_context():
+        max_id = db.session.execute(
+            db.text("SELECT COALESCE(MAX(id), 0) FROM rt_user_profile")
+        ).scalar() or 0
+        _last_event_id = int(max_id)
+        # 预加载最近 20 条有行为的事件到缓存，新客户端立即可见
+        _seed_recent_events()
+        db.session.remove()
     _push_running = True
     _push_thread = threading.Thread(target=_event_loop, args=(interval,), daemon=True)
     _push_thread.start()

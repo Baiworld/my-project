@@ -19,22 +19,30 @@ object OfflineAnalysisApp {
 
     val job = if (args.nonEmpty) args(0) else "all"
 
+    // Parse --limit N from args (e.g. "recommend --limit 500")
+    val limitIdx = args.indexOf("--limit")
+    val maxUsers = if (limitIdx >= 0 && limitIdx + 1 < args.length) {
+      try { Some(args(limitIdx + 1).toInt) } catch { case _: Exception => None }
+    } else None
+
     val conf = new SparkConf()
       .setAppName("HybridRecSys-Offline")
       .setMaster("local[*]")
-      .set("spark.sql.shuffle.partitions", "8")
+      .set("spark.sql.shuffle.partitions", "4")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.driver.memory", "2g")
 
     val spark = SparkSession.builder().config(conf).getOrCreate()
 
     println("=" * 60)
-    println(s"  SparkSQL 离线批处理 — Job: $job")
+    print(s"  SparkSQL 离线批处理 — Job: $job")
+    if (maxUsers.isDefined) println(s" (limit=${maxUsers.get})") else println()
     println("=" * 60)
 
     job match {
       case "portrait"     => UserPortraitBuilder.build(spark)
       case "als-train"    => ALSTrainer.train(spark)
-      case "recommend"    => HybridRecommender.run(spark)
+      case "recommend"    => HybridRecommender.run(spark, maxUsers)
       case "metrics"      => MetricsCalculator.calculate(spark)
       case "all"          =>
         println("\n[1/4] 构建用户画像...")
@@ -42,7 +50,7 @@ object OfflineAnalysisApp {
         println("\n[2/4] 训练 ALS 模型...")
         ALSTrainer.train(spark)
         println("\n[3/4] 生成混合推荐结果...")
-        HybridRecommender.run(spark)
+        HybridRecommender.run(spark, maxUsers)
         println("\n[4/4] 计算推荐效果指标...")
         MetricsCalculator.calculate(spark)
       case _ =>

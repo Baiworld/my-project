@@ -47,7 +47,21 @@ object DataValidator extends Serializable {
   private def sendToDlq(originalJson: String, reason: String, sourceTopic: String): Unit = {
     Try {
       val dlqMsg = s"""{"original_message":${originalJson},"error_reason":"${reason}","error_time":"${java.time.Instant.now}","source_topic":"${sourceTopic}"}"""
-      getDlqProducer().send(new ProducerRecord[String, String]("user_behavior_dlq", dlqMsg))
+      val future = getDlqProducer().send(new ProducerRecord[String, String]("user_behavior_dlq", dlqMsg))
+      // 异步获取发送结果，失败时输出日志
+      future.get()
+    } match {
+      case Success(_) => // sent OK
+      case Failure(e) => println(s"[DLQ] Failed to send dead-letter message: ${e.getMessage}")
+    }
+  }
+
+  /** 关闭死信队列生产者，释放连接资源 */
+  def closeDlqProducer(): Unit = {
+    if (dlqProducer != null) {
+      Try(dlqProducer.close())
+      dlqProducer = null
+      println("[DLQ] Producer closed")
     }
   }
 

@@ -20,7 +20,8 @@ let chinaGeoJSON = null;
 function buildOptions() {
   const scatterData = (props.data || []).map((d) => ({
     name: d.name || "",
-    value: [d.lng ?? 0, d.lat ?? 0, d.diversity ?? 50],
+    value: [d.lng ?? 0, d.lat ?? 0, d.value ?? 50],
+    raw: d,
   }));
 
   const usedData = scatterData.length > 0 ? scatterData : [];
@@ -36,23 +37,24 @@ function buildOptions() {
         if (p.seriesType === "scatter" || p.seriesType === "effectScatter") {
           const val = Array.isArray(p.value) ? p.value[2] : p.value;
           const level =
-            val >= 80 ? "高多样性"
-            : val >= 60 ? "中高多样性"
-            : val >= 40 ? "中等多样性"
-            : "低多样性";
-          const item = props.data?.find(
-            (d) => d.name === p.name
-          );
-          const extra = item?.cluster_size
-            ? `<br/>关联用户: ${item.cluster_size}`
-            : "";
-          return `<b>${p.name || ""}</b><br/>特征多样性: <b style="color:#E8784A">${val}</b> (${level})${extra}`;
+            val >= 80 ? "高活跃"
+            : val >= 60 ? "中高活跃"
+            : val >= 40 ? "中等活跃"
+            : "低活跃";
+          const d = p.data?.raw;
+          if (!d) return `<b>${p.name}</b><br/>活跃度: ${val} (${level})`;
+          return `<b>${d.name}</b><br/>`
+            + `活跃用户: <b style="color:#E8784A">${d.user_count ?? 0}</b><br/>`
+            + `总播放: <b>${(d.total_plays ?? 0).toLocaleString()}</b><br/>`
+            + `冷启动占比: <b>${d.coldstart_ratio ?? 0}%</b><br/>`
+            + `平均行为: <b>${d.avg_behaviors ?? 0}</b><br/>`
+            + `活跃度: <b style="color:#E8784A">${val}</b> (${level})`;
         }
         return p.name;
       },
     },
     visualMap: {
-      min: 20,
+      min: 10,
       max: 100,
       calculable: true,
       orient: "horizontal",
@@ -64,7 +66,7 @@ function buildOptions() {
       inRange: {
         color: ["#FFE0D0", "#FFC8A0", "#F0A080", "#E8784A", "#D0653A", "#C05030"],
       },
-      text: ["高多样性", "低多样性"],
+      text: ["高活跃", "低活跃"],
       padding: [0, 0, 0, 60],
     },
     geo: {
@@ -149,7 +151,16 @@ function handleResize() {
   chartInstance?.resize();
 }
 
-onMounted(() => initChart());
+let ro = null;
+
+onMounted(async () => {
+  await initChart();
+  window.addEventListener("resize", handleResize);
+  if (chartRef.value) {
+    ro = new ResizeObserver(() => chartInstance?.resize());
+    ro.observe(chartRef.value);
+  }
+});
 
 watch(
   () => props.data,
@@ -161,14 +172,6 @@ watch(
   { deep: true }
 );
 
-let ro = null;
-onMounted(() => {
-  window.addEventListener("resize", handleResize);
-  if (chartRef.value) {
-    ro = new ResizeObserver(() => chartInstance?.resize());
-    ro.observe(chartRef.value);
-  }
-});
 onUnmounted(() => {
   window.removeEventListener("resize", handleResize);
   chartInstance?.dispose();

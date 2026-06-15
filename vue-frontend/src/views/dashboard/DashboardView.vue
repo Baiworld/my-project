@@ -67,10 +67,10 @@
           <template v-if="activeTab === 'realtime'">
             <div class="stagger">
               <div class="metrics-row">
-                <MetricCard title="实时在线用户" :value="dashboardStore.metrics.onlineUsers" unit="人" :trend="dashboardStore.metricsTrend.onlineUsers.value" :trendType="dashboardStore.metricsTrend.onlineUsers.type" accent="blue" icon="users" />
-                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" :trend="dashboardStore.metricsTrend.todayRecommendations.value" :trendType="dashboardStore.metricsTrend.todayRecommendations.type" accent="green" icon="target" />
-                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" :trend="dashboardStore.metricsTrend.todayCTR.value" :trendType="dashboardStore.metricsTrend.todayCTR.type" accent="purple" icon="trend" />
-                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" :trend="dashboardStore.metricsTrend.avgWatchDuration.value" :trendType="dashboardStore.metricsTrend.avgWatchDuration.type" accent="orange" icon="clock" />
+                <MetricCard title="实时在线用户" :value="dashboardStore.metrics.onlineUsers" unit="人" :trend="dashboardStore.metricsTrend.onlineUsers.value" :trendType="dashboardStore.metricsTrend.onlineUsers.type" accent="coral" icon="users" />
+                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" :trend="dashboardStore.metricsTrend.todayRecommendations.value" :trendType="dashboardStore.metricsTrend.todayRecommendations.type" accent="teal" icon="target" />
+                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" :trend="dashboardStore.metricsTrend.todayCTR.value" :trendType="dashboardStore.metricsTrend.todayCTR.type" accent="indigo" icon="trend" />
+                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" :trend="dashboardStore.metricsTrend.avgWatchDuration.value" :trendType="dashboardStore.metricsTrend.avgWatchDuration.type" accent="amber" icon="clock" />
               </div>
 
               <div class="chart-row cols-2">
@@ -139,10 +139,10 @@
           <template v-if="activeTab === 'coldstart'">
             <div class="stagger">
               <div class="metrics-row">
-                <MetricCard title="冷启动用户数" :value="dashboardStore.coldstartStats.newUsers" unit="人" trend="" trendType="up" accent="blue" icon="users" />
-                <MetricCard title="聚类数量" :value="dashboardStore.clusterDistribution.length" unit="个" trend="" trendType="up" accent="green" icon="target" />
-                <MetricCard title="平均行为次数" :value="dashboardStore.coldstartStats.avgBehaviors" unit="次" trend="" trendType="up" accent="purple" icon="trend" />
-                <MetricCard title="冷启动转化率" :value="dashboardStore.coldstartStats.conversionRate + '%'" unit="" trend="" trendType="up" accent="orange" icon="clock" />
+                <MetricCard title="冷启动用户数" :value="dashboardStore.coldstartStats.newUsers" unit="人" :trend="dashboardStore.coldstartStats.trends?.new_users?.value || ''" :trendType="dashboardStore.coldstartStats.trends?.new_users?.type || 'up'" accent="coral" icon="users" />
+                <MetricCard title="聚类数量" :value="dashboardStore.clusterDistribution.length" unit="个" trend="" trendType="up" accent="teal" icon="target" />
+                <MetricCard title="平均行为次数" :value="dashboardStore.coldstartStats.avgBehaviors" unit="次" :trend="dashboardStore.coldstartStats.trends?.avg_behavior_count?.value || ''" :trendType="dashboardStore.coldstartStats.trends?.avg_behavior_count?.type || 'up'" accent="indigo" icon="trend" />
+                <MetricCard title="冷启动转化率" :value="dashboardStore.coldstartStats.conversionRate + '%'" unit="" :trend="dashboardStore.coldstartStats.trends?.conversion_rate?.value || ''" :trendType="dashboardStore.coldstartStats.trends?.conversion_rate?.type || 'up'" accent="amber" icon="clock" />
               </div>
               <div class="chart-row cols-2">
                 <div class="chart-panel">
@@ -163,10 +163,10 @@
           <template v-if="activeTab === 'recommendations'">
             <div class="stagger">
               <div class="metrics-row">
-                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" trend="+8.3%" trendType="up" accent="green" icon="target" />
-                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" trend="-1.2%" trendType="down" accent="purple" icon="trend" />
-                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" trend="+5.8%" trendType="up" accent="orange" icon="clock" />
-                <MetricCard title="推荐覆盖率" :value="(dashboardStore.metrics.coverage * 100).toFixed(1) + '%'" unit="" :trend="dashboardStore.metricsTrend.coverage.value" :trendType="dashboardStore.metricsTrend.coverage.type" accent="blue" icon="users" />
+                <MetricCard title="今日推荐总数" :value="dashboardStore.metrics.todayRecommendations" unit="次" :trend="dashboardStore.metricsTrend.todayRecommendations.value" :trendType="dashboardStore.metricsTrend.todayRecommendations.type" accent="teal" icon="target" />
+                <MetricCard title="今日 CTR" :value="(dashboardStore.metrics.todayCTR * 100).toFixed(2) + '%'" unit="" :trend="dashboardStore.metricsTrend.todayCTR.value" :trendType="dashboardStore.metricsTrend.todayCTR.type" accent="indigo" icon="trend" />
+                <MetricCard title="人均播放时长" :value="formatDuration(dashboardStore.metrics.avgWatchDuration)" unit="" :trend="dashboardStore.metricsTrend.avgWatchDuration.value" :trendType="dashboardStore.metricsTrend.avgWatchDuration.type" accent="amber" icon="clock" />
+                <MetricCard title="推荐覆盖率" :value="(dashboardStore.metrics.coverage * 100).toFixed(1) + '%'" unit="" :trend="dashboardStore.metricsTrend.coverage.value" :trendType="dashboardStore.metricsTrend.coverage.type" accent="coral" icon="users" />
               </div>
               <div class="chart-row cols-3">
                 <div class="chart-panel">
@@ -227,7 +227,7 @@
               <div class="detail-tags" v-if="contentModal.data.tags">
                 <span class="detail-label">标签</span>
                 <div class="tags-list">
-                  <span v-for="tag in parseTags(contentModal.data.tags)" :key="tag" class="badge badge-blue" style="margin:2px">{{ tag }}</span>
+                  <span v-for="tag in parseTags(contentModal.data.tags)" :key="tag" class="badge badge-coral" style="margin:3px">{{ tag }}</span>
                 </div>
               </div>
             </div>
@@ -336,44 +336,36 @@ let timeInterval;
 let onDashboardUpdate = null;
 let onUserEvent = null;
 
+const TODAY = () => new Date().toISOString().split("T")[0];
+
 onMounted(async () => {
   updateTime();
   timeInterval = setInterval(updateTime, 1000);
 
-  await Promise.all([
-    dashboardStore.loadMetrics(),
-    dashboardStore.loadTrendData(),
-    dashboardStore.loadHotContent(),
-    dashboardStore.loadColdstartAnalysis(),
-    dashboardStore.loadRegionData(),
-  ]);
+  // 初始加载：API 拉全量数据用于首屏渲染，单接口失败不影响整体
+  try {
+    await Promise.all([
+      dashboardStore.loadMetrics(),
+      dashboardStore.loadTrendData(),
+      dashboardStore.loadHotContent(),
+      dashboardStore.loadColdstartAnalysis(),
+      dashboardStore.loadRegionData(),
+    ]);
+  } catch (e) {
+    console.error("Initial data load failed:", e.message);
+  }
 
+  // WebSocket 连接后每 5 秒推送全部 18 个字段，覆盖所有卡片
+  // 不再需要 API 定时刷新兜底，避免 API/WebSocket 公式不一致导致数据闪烁
   wsConnect();
 
   onDashboardUpdate = (msg) => {
+    // 统一入口：所有字段映射在 store.applySnapshot() 中集中处理
     if (!msg || msg.type !== "dashboard_snapshot") return;
     const d = msg.data;
-    if (d) {
-      if (d.online_users > 0) dashboardStore.metrics.onlineUsers = d.online_users;
-      if (d.daily_recommendations > 0) dashboardStore.metrics.todayRecommendations = d.daily_recommendations;
-      if (d.ctr > 0) dashboardStore.metrics.todayCTR = d.ctr;
-      if (d.avg_watch_duration > 0) dashboardStore.metrics.avgWatchDuration = d.avg_watch_duration;
-      if (d.coverage > 0) dashboardStore.metrics.coverage = d.coverage;
-      if (d.hot_content_top5) dashboardStore.hotContent = d.hot_content_top5;
-      if (d.coldstart_new_today != null) dashboardStore.coldstartStats.newUsers = d.coldstart_new_today;
-      if (d.ctr_trend && d.ctr_trend.length > 0) {
-        dashboardStore.trendData.ctr = d.ctr_trend;
-      }
-      if (d.cluster_distribution && d.cluster_distribution.length > 0) {
-        dashboardStore.clusterDistribution = d.cluster_distribution;
-      }
-      if (d.strategy_distribution && d.strategy_distribution.length > 0) {
-        dashboardStore.strategyDistribution = d.strategy_distribution;
-      }
-      if (d.content_ratio) {
-        dashboardStore.contentRatio = d.content_ratio;
-      }
-    }
+    if (!d) return;
+    if (d.data_date && d.data_date !== TODAY()) return;
+    dashboardStore.applySnapshot(d);
   };
 
   onUserEvent = (msg) => {
@@ -400,238 +392,170 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ═══════ Layout ═══════ */
 .dashboard {
-  display: flex;
-  height: 100vh;
-  background: var(--bg-root);
-  color: var(--text-primary);
-  overflow: hidden;
+  display: flex; height: 100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 80% 0%, rgba(232,120,74,0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 20% 100%, rgba(245,158,11,0.04), transparent),
+    var(--bg-root);
+  color: var(--text-primary); overflow: hidden;
 }
 
 /* ═══════ Sidebar ═══════ */
 .sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
+  width: 220px; flex-shrink: 0; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #FFF9F4 0%, #FFF3EA 50%, #FFEDE0 100%);
   border-right: 1px solid var(--border-subtle);
 }
-
 .sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 20px 24px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 22px 20px 20px;
+  background: linear-gradient(180deg, rgba(232,120,74,0.06), transparent);
   border-bottom: 1px solid var(--border-subtle);
 }
 .brand-logo {
-  width: 36px; height: 36px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(232,120,74,0.3);
 }
 .brand-logo svg { width: 100%; height: 100%; display: block; }
-.sidebar-brand h2 { font-size: 15px; font-weight: 700; color: var(--color-primary-dark); line-height: 1.3; }
-.sidebar-brand p  { font-size: 11px; color: var(--text-tertiary); }
+.sidebar-brand h2 { font-size: 15px; font-weight: 700; background: linear-gradient(135deg, var(--color-primary-dark), var(--color-amber-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.sidebar-brand p { font-size: 11px; color: var(--text-tertiary); }
 
-.sidebar-nav {
-  flex: 1;
-  padding: 12px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.sidebar-nav { flex: 1; padding: 16px 10px; display: flex; flex-direction: column; gap: 4px; }
 
 .nav-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-  text-align: left;
-  width: 100%;
+  position: relative; display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border: none; border-radius: var(--radius-md);
+  background: transparent; color: var(--text-secondary);
+  font-size: var(--font-size-sm); font-family: var(--font-family);
+  cursor: pointer; transition: all var(--duration-fast) ease;
+  text-align: left; width: 100%;
 }
-.nav-item:hover {
-  background: rgba(232,120,74,0.06);
-  color: var(--text-primary);
-}
+.nav-item:hover { background: rgba(232,120,74,0.08); color: var(--text-primary); }
 .nav-item.active {
-  background: rgba(232,120,74,0.12);
-  color: var(--color-primary-dark);
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(232,120,74,0.14), rgba(245,158,11,0.08));
+  color: var(--color-primary-dark); font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(232,120,74,0.15);
 }
-.nav-icon {
-  width: 20px; height: 20px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+.nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .nav-icon :deep(svg) { width: 18px; height: 18px; }
 .nav-indicator {
-  position: absolute;
-  right: 12px;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 8px var(--color-primary-glow);
+  position: absolute; right: 12px; width: 6px; height: 6px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-amber));
+  box-shadow: 0 0 10px var(--color-amber-glow);
 }
 
-.sidebar-footer {
-  padding: 14px 20px;
-  border-top: 1px solid var(--border-subtle);
-}
-.ws-status {
-  display: flex; align-items: center; gap: 8px;
-  font-size: var(--font-size-xs); color: var(--text-tertiary);
-}
-.ws-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-}
-.ws-dot.on  { background: #34D399; box-shadow: 0 0 6px rgba(52,211,153,0.5); }
-.ws-dot.off { background: #F87171; box-shadow: 0 0 6px rgba(248,113,113,0.5); }
+.sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--border-subtle); }
+.ws-status { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-xs); color: var(--text-tertiary); }
+.ws-dot { width: 8px; height: 8px; border-radius: 50%; }
+.ws-dot.on  { background: linear-gradient(135deg, #34D399, #2D9D7A); box-shadow: 0 0 8px rgba(52,211,153,0.6); }
+.ws-dot.off { background: linear-gradient(135deg, #F87171, #E0554A); box-shadow: 0 0 8px rgba(248,113,113,0.6); }
 
 /* ═══════ Main area ═══════ */
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
+.main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 /* ── Top bar ── */
 .top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 14px 28px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,248,243,0.9));
+  border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
 .top-left { display: flex; align-items: baseline; gap: 16px; }
-.top-left h1 { font-size: var(--font-size-lg); font-weight: 700; }
+.top-left h1 {
+  font-size: var(--font-size-lg); font-weight: 700;
+  background: linear-gradient(135deg, var(--text-primary), var(--color-bronze-dark));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
 .top-time { font-size: var(--font-size-xs); color: var(--text-tertiary); font-family: var(--font-mono); }
 .top-right { display: flex; align-items: center; gap: 10px; }
 .header-actions { display: flex; gap: 6px; }
-.logout-btn { color: #F87171 !important; border-color: rgba(239,68,68,0.2) !important; }
-.logout-btn:hover { background: rgba(239,68,68,0.1) !important; color: #FCA5A5 !important; }
+.logout-btn { color: var(--color-rose) !important; border-color: rgba(240,98,110,0.2) !important; }
+.logout-btn:hover { background: rgba(240,98,110,0.08) !important; color: var(--color-rose-dark) !important; }
 
-/* ── Content scroll ── */
-.content-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-.content-inner { padding: 24px 28px 40px; }
+/* ── Content ── */
+.content-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.content-inner { padding: 28px 28px 48px; }
 
 /* ═══════ Metrics row ═══════ */
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
 
 /* ═══════ Chart panels ═══════ */
-.chart-row {
-  display: grid;
-  gap: 16px;
-  margin-bottom: 24px;
-}
+.chart-row { display: grid; gap: 18px; margin-bottom: 28px; }
 .chart-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .chart-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
 
 .chart-panel {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: border-color 0.3s ease;
+  transition: all var(--duration-normal) ease;
+  box-shadow: var(--shadow-sm);
 }
-.chart-panel:hover { border-color: var(--border-default); }
+.chart-panel:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(255,248,243,0.4), transparent);
 }
-.panel-header h3 {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
+.panel-header h3 { font-size: var(--font-size-base); font-weight: 700; color: var(--text-primary); }
 .panel-badge {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-  background: rgba(255,255,255,0.04);
-  padding: 3px 10px;
-  border-radius: 99px;
+  font-size: var(--font-size-xs); color: var(--color-bronze);
+  background: linear-gradient(135deg, rgba(232,120,74,0.08), rgba(245,158,11,0.05));
+  padding: 3px 12px; border-radius: 99px; font-weight: 500;
+  border: 1px solid var(--border-subtle);
 }
 .panel-actions { display: flex; align-items: center; gap: 10px; }
 .log-count { font-size: var(--font-size-xs); color: var(--text-tertiary); }
-
-.panel-body { padding: 12px 20px 20px; }
-
-.log-panel .panel-body { padding: 0 0 0 0; }
+.panel-body { padding: 16px 22px 22px; }
+.log-panel .panel-body { padding: 0; }
 
 /* ── Content detail modal ── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(60,40,30,0.4);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(40,20,10,0.45); backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .modal-card {
-  width: 460px; max-width: 92vw;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
+  width: 480px; max-width: 94vw;
+  background: linear-gradient(180deg, var(--bg-surface), var(--bg-surface-warm));
+  border: 1px solid var(--border-accent);
   border-radius: var(--radius-xl);
-  box-shadow: 0 16px 48px rgba(120,80,50,0.15);
+  box-shadow: 0 24px 64px rgba(120,80,50,0.18);
 }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px 0;
+  padding: 22px 26px 0;
 }
 .modal-header h3 { font-size: var(--font-size-lg); font-weight: 700; }
 .modal-close {
-  width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.04); border: none; border-radius: 8px;
-  color: var(--text-secondary); cursor: pointer;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  background: rgba(232,120,74,0.06); border: 1px solid var(--border-subtle);
+  border-radius: 8px; color: var(--text-secondary); cursor: pointer;
+  transition: all var(--duration-fast);
 }
-.modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.modal-close:hover { background: rgba(232,120,74,0.12); color: var(--text-primary); border-color: var(--border-default); }
 .modal-close svg { width: 16px; height: 16px; }
-.modal-body { padding: 16px 24px 20px; }
+.modal-body { padding: 16px 26px 24px; }
 .modal-enter-active { transition: opacity 0.25s ease; }
 .modal-enter-active .modal-card { animation: fadeInScale 0.3s cubic-bezier(0.19,1,0.22,1); }
 .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 
-.content-detail-card .detail-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-}
-.detail-item {
-  display: flex; flex-direction: column; gap: 2px;
-}
-.detail-label {
-  font-size: var(--font-size-xs); color: var(--text-tertiary);
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.detail-value {
-  font-size: var(--font-size-sm); color: var(--text-primary);
-}
-.detail-tags { margin-top: 16px; }
-.detail-tags .detail-label { display: block; margin-bottom: 6px; }
-.tags-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.content-detail-card .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.detail-item { display: flex; flex-direction: column; gap: 2px; }
+.detail-label { font-size: var(--font-size-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.detail-value { font-size: var(--font-size-sm); color: var(--text-primary); font-weight: 500; }
+.detail-tags { margin-top: 18px; }
+.detail-tags .detail-label { display: block; margin-bottom: 8px; }
+.tags-list { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>

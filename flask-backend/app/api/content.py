@@ -16,6 +16,7 @@ def list_content():
     """Paginated content list for the query page (content management tab)."""
     content_type = request.args.get("content_type")
     user_id = request.args.get("user_id", type=int)
+    keyword = request.args.get("keyword")
 
     page, size = validate_pagination(
         request.args.get("page"), request.args.get("size")
@@ -27,6 +28,9 @@ def list_content():
     if content_type in ("music", "video"):
         where.append("c.content_type = :content_type")
         params["content_type"] = content_type
+    if keyword:
+        where.append("(m.title LIKE :kw OR m.artist_or_author LIKE :kw OR m.tags LIKE :kw)")
+        params["kw"] = f"%{keyword}%"
 
     where_clause = " AND ".join(where)
 
@@ -36,7 +40,9 @@ def list_content():
             f"MAX(c.like_count) as like_count, MAX(c.favorite_count) as favorite_count, "
             f"MAX(c.share_count) as share_count, AVG(c.completion_rate) as completion_rate, "
             f"AVG(c.interaction_rate) as interaction_rate, "
-            f"COALESCE(MAX(m.title), CONCAT(IF(MAX(c.content_type)='music','音乐','视频'), ' #', MAX(c.content_id))) AS title "
+            f"COALESCE(MAX(m.title), CONCAT(IF(MAX(c.content_type)='music','音乐','视频'), ' #', MAX(c.content_id))) AS title, "
+            f"MAX(m.artist_or_author) as artist_or_author, MAX(m.style_or_category) as style_or_category, "
+            f"MAX(m.tags) as tags, MAX(m.duration) as duration, MAX(m.language) as language, MAX(m.bpm) as bpm "
             f"FROM rt_content_hot c "
             f"LEFT JOIN content_metadata m ON c.content_id = m.content_id AND c.content_type = m.content_type "
             f"WHERE {where_clause} "
@@ -47,8 +53,11 @@ def list_content():
     ).fetchall()
 
     total = db.session.execute(
-        text(f"SELECT COUNT(DISTINCT c.content_id, c.content_type) FROM rt_content_hot c "
-             f"WHERE {where_clause}"),
+        text(
+            f"SELECT COUNT(DISTINCT c.content_id, c.content_type) FROM rt_content_hot c "
+            f"LEFT JOIN content_metadata m ON c.content_id = m.content_id AND c.content_type = m.content_type "
+            f"WHERE {where_clause}"
+        ),
         params,
     ).scalar()
 
@@ -64,9 +73,17 @@ def list_content():
             "like_count": r.like_count,
             "favorite_count": r.favorite_count,
             "share_count": r.share_count,
+            "completion_rate": float(r.completion_rate) if r.completion_rate else 0,
+            "interaction_rate": float(r.interaction_rate) if r.interaction_rate else 0,
+            "artist_or_author": r.artist_or_author,
+            "style_or_category": r.style_or_category,
+            "tags": r.tags,
+            "duration": float(r.duration) if r.duration else 0,
+            "language": r.language,
+            "bpm": float(r.bpm) if r.bpm else 0,
         })
 
-    write_audit("query", "content", {"type": content_type})
+    write_audit("query", "content", {"type": content_type, "keyword": keyword})
     return jsonify({
         "code": 200,
         "data": result,

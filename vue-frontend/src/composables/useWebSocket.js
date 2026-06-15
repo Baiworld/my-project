@@ -14,7 +14,8 @@ export function useWebSocket() {
 
   function connect() {
     socket = io(SERVER_URL, {
-      reconnection: false, // manual exponential backoff
+      transports: ["polling"], // Flask dev server does not support WebSocket
+      reconnection: false,
     });
 
     socket.on("connect", () => {

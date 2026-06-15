@@ -30,7 +30,7 @@ object HybridRecommender {
    * 步骤: 读取用户数据 → 按行为量分三类 → ALS 批量推荐存量用户 →
    *       冷启动 ε-greedy → 过渡期插值混合 → DPP 重排 → 写入 MySQL
    */
-  def run(spark: SparkSession): Unit = {
+  def run(spark: SparkSession, maxUsers: Option[Int] = None): Unit = {
     import spark.implicits._
 
     val cfg = ConfigFactory.load()
@@ -50,10 +50,20 @@ object HybridRecommender {
     } catch { case _: Exception => spark.emptyDataFrame }
 
     // 2. 提取用户列表
-    val users = profileDF.select("user_id", "behavior_count")
+    val allUsers = profileDF.select("user_id", "behavior_count")
       .distinct().collect().map { r =>
       (safeLong(r, "user_id"), safeInt(r, "behavior_count"))
     }.toSeq
+
+    // 如果指定了用户上限，优先选冷启动用户（最能体现推荐效果）
+    val users = maxUsers match {
+      case Some(limit) if limit < allUsers.size =>
+        val cold = allUsers.filter(_._2 <= coldThreshold).take(limit / 2)
+        val rest = allUsers.filter(_._2 > coldThreshold).take(limit - cold.size)
+        println(s"[推荐引擎] 限制用户数: ${allUsers.size} -> ${cold.size + rest.size} (冷启动=${cold.size}, 其他=${rest.size})")
+        cold ++ rest
+      case _ => allUsers
+    }
 
     // 3. 构建热门内容池（Top-300）
     val hotContents = hotDF.select("content_id", "content_type", "hot_score")

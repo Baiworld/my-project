@@ -43,7 +43,7 @@ const props = defineProps({
   unit: { type: String, default: "" },
   trend: { type: String, default: "" },
   trendType: { type: String, default: "up", validator: (v) => ["up", "down"].includes(v) },
-  accent: { type: String, default: "blue", validator: (v) => ["blue","green","purple","orange"].includes(v) },
+  accent: { type: String, default: "coral", validator: (v) => ["coral","amber","teal","indigo","rose","gold","sky","blue","green","purple","orange"].includes(v) },
   icon: { type: String, default: "" },
 });
 
@@ -64,90 +64,102 @@ const iconPaths = {
 <style scoped>
 .metric-card {
   position: relative;
-  background: var(--bg-surface);
+  background: linear-gradient(180deg, var(--bg-surface), var(--bg-surface-warm));
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
+  border-radius: var(--radius-xl);
+  padding: 22px 24px;
   overflow: hidden;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  transition: all var(--duration-normal) var(--ease-out-expo);
 }
+.metric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.accent-coral::before  { background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light)); }
+.accent-amber::before  { background: linear-gradient(90deg, var(--color-amber), var(--color-amber-light)); }
+.accent-teal::before   { background: linear-gradient(90deg, var(--color-teal), var(--color-teal-light)); }
+.accent-indigo::before { background: linear-gradient(90deg, var(--color-indigo), var(--color-indigo-light)); }
+.accent-rose::before   { background: linear-gradient(90deg, var(--color-rose), var(--color-rose-light)); }
+.accent-gold::before   { background: linear-gradient(90deg, var(--color-gold), var(--color-gold-light)); }
+.accent-sky::before    { background: linear-gradient(90deg, var(--color-sky), var(--color-sky-light)); }
+.accent-blue::before   { background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light)); }
+.accent-green::before  { background: linear-gradient(90deg, var(--color-teal), var(--color-teal-light)); }
+.accent-purple::before { background: linear-gradient(90deg, var(--color-plum), var(--color-plum-light)); }
+.accent-orange::before { background: linear-gradient(90deg, var(--color-gold), var(--color-gold-light)); }
+
 .metric-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
+  border-color: var(--border-strong);
 }
 
 /* ── Glow accent ── */
 .card-glow {
   position: absolute;
-  top: -50%;
-  right: -30%;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  opacity: 0.12;
+  top: -40%; right: -20%;
+  width: 140px; height: 140px;
+  border-radius: 50%; opacity: 0.1;
   transition: opacity 0.3s ease;
   pointer-events: none;
 }
-.metric-card:hover .card-glow { opacity: 0.22; }
+.metric-card:hover .card-glow { opacity: 0.2; }
 
-.accent-blue   .card-glow { background: radial-gradient(circle, var(--color-primary), transparent); }
-.accent-green  .card-glow { background: radial-gradient(circle, var(--color-success), transparent); }
-.accent-purple .card-glow { background: radial-gradient(circle, #C88030, transparent); }
-.accent-orange .card-glow { background: radial-gradient(circle, #E8784A, transparent); }
+.accent-coral .card-glow  { background: radial-gradient(circle, var(--color-primary), transparent); }
+.accent-amber .card-glow  { background: radial-gradient(circle, var(--color-amber), transparent); }
+.accent-teal .card-glow   { background: radial-gradient(circle, var(--color-teal), transparent); }
+.accent-indigo .card-glow { background: radial-gradient(circle, var(--color-indigo), transparent); }
+.accent-rose .card-glow   { background: radial-gradient(circle, var(--color-rose), transparent); }
+.accent-gold .card-glow   { background: radial-gradient(circle, var(--color-gold), transparent); }
+.accent-sky .card-glow    { background: radial-gradient(circle, var(--color-sky), transparent); }
+.accent-blue .card-glow   { background: radial-gradient(circle, var(--color-primary), transparent); }
+.accent-green .card-glow  { background: radial-gradient(circle, var(--color-teal), transparent); }
+.accent-purple .card-glow { background: radial-gradient(circle, var(--color-plum), transparent); }
+.accent-orange .card-glow { background: radial-gradient(circle, var(--color-gold), transparent); }
 
 /* ── Inner layout ── */
-.card-inner {
-  position: relative; z-index: 1;
-  display: flex; align-items: flex-start; gap: 16px;
-}
+.card-inner { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 16px; }
 
 /* ── Icon ── */
 .card-icon {
-  width: 44px; height: 44px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 12px;
-  flex-shrink: 0;
+  width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; flex-shrink: 0;
 }
 .card-icon svg { width: 22px; height: 22px; }
 
-.accent-blue   .card-icon { background: rgba(232,120,74,0.12);  color: var(--color-primary-dark); }
-.accent-green  .card-icon { background: rgba(45,157,122,0.12);  color: var(--color-success); }
-.accent-purple .card-icon { background: rgba(200,128,48,0.12);  color: #C88030; }
-.accent-orange .card-icon { background: rgba(232,120,74,0.12);  color: #E8784A; }
+.accent-coral .card-icon  { background: linear-gradient(135deg, rgba(232,120,74,0.15), rgba(240,160,128,0.08)); color: var(--color-primary-dark); }
+.accent-amber .card-icon  { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(252,211,77,0.08)); color: var(--color-amber-dark); }
+.accent-teal .card-icon   { background: linear-gradient(135deg, rgba(45,157,122,0.15), rgba(91,200,168,0.08)); color: var(--color-teal); }
+.accent-indigo .card-icon { background: linear-gradient(135deg, rgba(124,111,223,0.15), rgba(168,156,240,0.08)); color: var(--color-indigo); }
+.accent-rose .card-icon   { background: linear-gradient(135deg, rgba(240,98,110,0.15), rgba(248,160,168,0.08)); color: var(--color-rose-dark); }
+.accent-gold .card-icon   { background: linear-gradient(135deg, rgba(232,160,64,0.15), rgba(240,200,120,0.08)); color: var(--color-gold-dark); }
+.accent-sky .card-icon    { background: linear-gradient(135deg, rgba(91,155,213,0.15), rgba(139,192,240,0.08)); color: #4A8AC5; }
+.accent-blue .card-icon   { background: linear-gradient(135deg, rgba(232,120,74,0.15), rgba(240,160,128,0.08)); color: var(--color-primary-dark); }
+.accent-green .card-icon  { background: linear-gradient(135deg, rgba(45,157,122,0.15), rgba(91,200,168,0.08)); color: var(--color-teal); }
+.accent-purple .card-icon { background: linear-gradient(135deg, rgba(168,122,184,0.15), rgba(208,168,216,0.08)); color: #8A64B4; }
+.accent-orange .card-icon { background: linear-gradient(135deg, rgba(232,160,64,0.15), rgba(240,200,120,0.08)); color: var(--color-gold-dark); }
 
 /* ── Body ── */
 .card-body { flex: 1; min-width: 0; }
 .card-title {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 6px;
+  font-size: var(--font-size-xs); color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 8px; font-weight: 600;
 }
 .card-value-row { display: flex; align-items: baseline; gap: 4px; }
 .card-value {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
+  font-size: var(--font-size-2xl); font-weight: 800;
+  color: var(--text-primary); line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
-.card-unit {
-  font-size: var(--font-size-sm);
-  color: var(--text-tertiary);
-}
+.card-unit { font-size: var(--font-size-sm); color: var(--text-tertiary); }
 
 /* ── Trend badge ── */
 .card-trend {
   display: flex; align-items: center; gap: 4px;
-  padding: 4px 10px;
-  border-radius: 99px;
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  flex-shrink: 0;
-  align-self: center;
+  padding: 5px 12px; border-radius: 99px;
+  font-size: var(--font-size-xs); font-weight: 600;
+  flex-shrink: 0; align-self: center;
 }
-.card-trend.up   { background: rgba(16,185,129,0.12); color: #34D399; }
-.card-trend.down { background: rgba(239,68,68,0.12);  color: #F87171; }
+.card-trend.up   { background: linear-gradient(135deg, rgba(45,157,122,0.15), rgba(91,200,168,0.08)); color: #2D9D7A; }
+.card-trend.down { background: linear-gradient(135deg, rgba(240,98,110,0.15), rgba(248,160,168,0.08)); color: #E0554A; }
 .trend-arrow { width: 12px; height: 12px; }
 </style>

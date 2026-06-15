@@ -31,15 +31,17 @@ object MySQLBatchWriter extends Serializable {
    */
   def writeUserProfile(rdd: RDD[UserProfile]): Unit = {
     rdd.foreachPartition { iter =>
-      if (iter.nonEmpty) {
+      if (iter.nonEmpty) withRetry("writeUserProfile") {
         val conn = getConnection()
+        conn.setAutoCommit(false)
         try {
           val sql =
             """INSERT INTO rt_user_profile
               |  (user_id, window_start, window_end, play_count, completion_rate,
               |   like_rate, favorite_rate, skip_rate, share_count, comment_count,
-              |   preference_distribution, active_hours, is_cold_start, behavior_count, content_type_ratio)
-              |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              |   preference_distribution, active_hours, is_cold_start, behavior_count,
+              |   content_type_ratio, region)
+              |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.stripMargin
           val ps = conn.prepareStatement(sql)
           var count = 0
@@ -59,6 +61,7 @@ object MySQLBatchWriter extends Serializable {
             ps.setInt(13, if (p.isColdStart) 1 else 0)
             ps.setInt(14, p.behaviorCount)
             ps.setString(15, p.contentTypeRatio)
+            ps.setString(16, p.region)
             ps.addBatch()
             count += 1
             if (count >= batchSize) {
@@ -66,8 +69,13 @@ object MySQLBatchWriter extends Serializable {
               count = 0
             }
           }
-          if (count > 0) ps.executeBatch()  // 提交剩余批次
+          if (count > 0) ps.executeBatch()
+          conn.commit()
           ps.close()
+        } catch {
+          case e: Exception =>
+            try { conn.rollback() } catch { case _: Exception => }
+            throw e
         } finally {
           conn.close()
         }
@@ -82,8 +90,9 @@ object MySQLBatchWriter extends Serializable {
    */
   def writeContentHot(rdd: RDD[ContentHot]): Unit = {
     rdd.foreachPartition { iter =>
-      if (iter.nonEmpty) {
+      if (iter.nonEmpty) withRetry("writeContentHot") {
         val conn = getConnection()
+        conn.setAutoCommit(false)
         try {
           val sql =
             """INSERT INTO rt_content_hot
@@ -113,7 +122,12 @@ object MySQLBatchWriter extends Serializable {
             }
           }
           if (count > 0) ps.executeBatch()
+          conn.commit()
           ps.close()
+        } catch {
+          case e: Exception =>
+            try { conn.rollback() } catch { case _: Exception => }
+            throw e
         } finally {
           conn.close()
         }
@@ -129,8 +143,9 @@ object MySQLBatchWriter extends Serializable {
    */
   def writeColdStartCluster(rdd: RDD[ClusterResult]): Unit = {
     rdd.foreachPartition { iter =>
-      if (iter.nonEmpty) {
+      if (iter.nonEmpty) withRetry("writeColdStartCluster") {
         val conn = getConnection()
+        conn.setAutoCommit(false)
         try {
           val sql =
             """INSERT INTO rt_coldstart_cluster
@@ -160,7 +175,12 @@ object MySQLBatchWriter extends Serializable {
             }
           }
           if (count > 0) ps.executeBatch()
+          conn.commit()
           ps.close()
+        } catch {
+          case e: Exception =>
+            try { conn.rollback() } catch { case _: Exception => }
+            throw e
         } finally {
           conn.close()
         }
@@ -175,8 +195,9 @@ object MySQLBatchWriter extends Serializable {
    */
   def writeContentMetadata(rdd: RDD[ContentMetaEvent]): Unit = {
     rdd.foreachPartition { iter =>
-      if (iter.nonEmpty) {
+      if (iter.nonEmpty) withRetry("writeContentMetadata") {
         val conn = getConnection()
+        conn.setAutoCommit(false)
         try {
           val sql =
             """INSERT IGNORE INTO content_metadata
@@ -204,7 +225,12 @@ object MySQLBatchWriter extends Serializable {
             }
           }
           if (count > 0) ps.executeBatch()
+          conn.commit()
           ps.close()
+        } catch {
+          case e: Exception =>
+            try { conn.rollback() } catch { case _: Exception => }
+            throw e
         } finally {
           conn.close()
         }
@@ -216,5 +242,24 @@ object MySQLBatchWriter extends Serializable {
   private def getConnection(): Connection = {
     Class.forName("com.mysql.cj.jdbc.Driver")
     DriverManager.getConnection(jdbcUrl, dbUser, dbPass)
+  }
+
+  /** 带重试的执行器：最多重试 3 次，递增延迟 */
+  private def withRetry[T](label: String)(fn: => T): T = {
+    val maxRetries = 3
+    var attempt = 0
+    while (true) {
+      try {
+        return fn
+      } catch {
+        case e: Exception =>
+          attempt += 1
+          if (attempt >= maxRetries) throw e
+          val delay = 100 * attempt
+          println(s"[重试] $label 失败 (${attempt}/$maxRetries), ${delay}ms 后重试: ${e.getMessage.take(100)}")
+          Thread.sleep(delay)
+      }
+    }
+    throw new RuntimeException("unreachable")
   }
 }

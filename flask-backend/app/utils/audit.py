@@ -22,4 +22,4 @@ def write_audit(action: str, target: str = "", detail: dict = None):
         ip_address=request.remote_addr,
     )
     db.session.add(log)
-    db.session.commit()
+    db.session.flush()  # flush 而非 commit，由调用方事务统一提交
