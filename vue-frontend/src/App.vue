@@ -4,10 +4,13 @@
       <component :is="Component" :key="route.path" />
     </transition>
   </router-view>
+  <ToastContainer />
+  <ConfirmDialog />
 </template>
 
 <script setup>
-// Root — animated route transitions
+import ToastContainer from "@/components/common/ToastContainer.vue";
+import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 </script>
 
 <style>

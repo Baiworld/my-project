@@ -6,6 +6,22 @@ import api from "@/api";
 // 数据契约层 — 所有数据入口归一化，杜绝字段名不一致
 // ═══════════════════════════════════════════════════════════════
 
+/** ISO province codes → Chinese names */
+const REGION_NAMES = {
+  "CN-BJ": "北京", "CN-SH": "上海", "CN-GD": "广东", "CN-ZJ": "浙江",
+  "CN-SC": "四川", "CN-HB": "湖北", "CN-JS": "江苏", "CN-SN": "陕西",
+  "CN-CQ": "重庆", "CN-TJ": "天津", "CN-HN": "湖南", "CN-HA": "河南",
+  "CN-SD": "山东", "CN-LN": "辽宁", "CN-YN": "云南", "CN-FJ": "福建",
+  "CN-GX": "广西", "CN-JX": "江西", "CN-AH": "安徽", "CN-HE": "河北",
+};
+
+function _localizeRegion(dist) {
+  return (dist || []).map((d) => ({
+    name: REGION_NAMES[d.name] || d.name,
+    value: d.value,
+  }));
+}
+
 /** 后端 WebSocket 推送 snake_case → 前端 camelCase 映射 */
 function _snakeVal(obj, snake, camel, fallback) {
   // 优先 snake_case（WebSocket），其次 camelCase（API），最后 fallback
@@ -63,6 +79,7 @@ function normalizeSnapshot(d) {
     hotContent: d.hot_content_top5 ?? [],
     clusterDistribution: d.cluster_distribution ?? [],
     strategyDistribution: d.strategy_distribution ?? [],
+    regionDistribution: _localizeRegion(d.region_distribution ?? []),
     contentRatio: {
       music: d.content_ratio?.music ?? 0,
       video: d.content_ratio?.video ?? 0,
@@ -112,10 +129,15 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   const funnelData = ref([]);
   const strategyDistribution = ref([]);
+  const regionDistribution = ref([]);
   const compareData = ref({ coldstart: {}, existing: {} });
   const regionData = ref([]);
   const eventLogs = ref([]);
   const contentRatio = ref({ music: 0, video: 0 });
+  const lastUpdate = ref(null);
+  const anomalies = ref({});
+  const activeUsers = ref([]);
+
 
   const musicVideoRatio = computed(() => {
     const music = contentRatio.value.music ?? hotContent.value.filter((c) => c.content_type === "music").length;
@@ -143,7 +165,22 @@ export const useDashboardStore = defineStore("dashboard", () => {
     if (s.hotContent.length > 0) hotContent.value = s.hotContent;
     if (s.clusterDistribution.length > 0) clusterDistribution.value = s.clusterDistribution;
     if (s.strategyDistribution.length > 0) strategyDistribution.value = s.strategyDistribution;
+    if (s.regionDistribution.length > 0) regionDistribution.value = s.regionDistribution;
     contentRatio.value = s.contentRatio;
+
+    // Data freshness
+    lastUpdate.value = Date.now();
+
+    // Anomaly detection
+    const prevCtr = metrics.value.todayCTR;
+    const prevUsers = metrics.value.onlineUsers;
+    const newAnomalies = {};
+    if (prevCtr > 0 && s.metrics.todayCTR > 0 && s.metrics.todayCTR < prevCtr * 0.7) newAnomalies.ctrDrop = true;
+    if (prevUsers > 0 && s.metrics.onlineUsers > prevUsers * 1.5) newAnomalies.userSpike = true;
+    anomalies.value = newAnomalies;
+
+    // Active users ranking
+    if (rawSnapshot.active_users?.length > 0) activeUsers.value = rawSnapshot.active_users;
   }
 
   async function loadMetrics() {
@@ -272,7 +309,16 @@ export const useDashboardStore = defineStore("dashboard", () => {
   }
 
   function addEventLog(log) {
-    eventLogs.value.unshift({ ...log, timestamp: new Date().toLocaleTimeString() });
+    // Look up content title/artist from hotContent
+    const content = hotContent.value.find(
+      (c) => String(c.content_id) === String(log.content_id)
+    );
+    eventLogs.value.unshift({
+      ...log,
+      content_title: content?.title || "",
+      content_artist: content?.artist_or_author || "",
+      timestamp: new Date().toLocaleTimeString(),
+    });
     if (eventLogs.value.length > 50) eventLogs.value.pop();
   }
 
@@ -282,8 +328,8 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
   return {
     metrics, metricsTrend, trendData, hotContent, clusterDistribution,
-    coldstartStats, funnelData, strategyDistribution, compareData,
-    regionData, eventLogs, contentRatio, musicVideoRatio,
+    coldstartStats, funnelData, strategyDistribution, regionDistribution, compareData,
+    regionData, eventLogs, contentRatio, lastUpdate, anomalies, activeUsers, musicVideoRatio,
     applySnapshot, loadMetrics, loadTrendData, loadHotContent,
     loadColdstartAnalysis, loadRegionData, addEventLog, clearEventLogs,
   };

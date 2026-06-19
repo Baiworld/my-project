@@ -25,7 +25,7 @@ FLUME_HOME="${FLUME_HOME:-/usr/local/flume}"
 FLUME_CONF_DIR="${SCRIPT_DIR}/flume"
 FLUME_AGENT_NAME="agent"
 
-OUTPUT_DIR="/opt/data-generator/output"
+OUTPUT_DIR="/opt/data-generator-vm/output"
 
 TOPICS=("user_behavior" "content_metadata" "user_register")
 TOPIC_PARTITIONS=(3 2 2)

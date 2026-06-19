@@ -242,6 +242,19 @@ def _fetch_dashboard_snapshot() -> dict:
                 FROM rt_user_profile
                 WHERE DATE(window_end) = :d AND {grp_filter}
             """), {"d": today_str}).fetchone()
+
+            # Fallback: if no data today, look back 30 days for most recent date
+            if not grp_row or grp_row[0] == 0:
+                grp_row = db.session.execute(db.text(f"""
+                    SELECT
+                        COUNT(*) as total_rows,
+                        SUM(CASE WHEN play_count > 0 THEN 1 ELSE 0 END) as active_rows,
+                        ROUND(AVG(completion_rate), 4) as avg_cvr,
+                        ROUND(SUM(play_count * completion_rate * 180) / NULLIF(COUNT(DISTINCT user_id), 1), 2) as avg_watch
+                    FROM rt_user_profile
+                    WHERE DATE(window_end) >= DATE_SUB(:d, INTERVAL 30 DAY) AND {grp_filter}
+                """), {"d": today_str}).fetchone()
+
             if grp_row and grp_row[0] > 0:
                 grp_total = int(grp_row[0])
                 grp_active = int(grp_row[1])
@@ -254,7 +267,7 @@ def _fetch_dashboard_snapshot() -> dict:
             else:
                 compare_data[grp_name] = {"ctr": 0.0, "cvr": 0.0, "avg_watch_duration": 0.0}
 
-        # Fallback: if rt data is empty for today, use offline_metrics
+        # Final fallback: if rt data is completely empty, use offline_metrics
         if compare_data.get("coldstart", {}).get("ctr", 0) == 0.0 \
            and compare_data.get("existing", {}).get("ctr", 0) == 0.0:
             for grp_name in ["coldstart", "existing"]:
@@ -320,6 +333,34 @@ def _fetch_dashboard_snapshot() -> dict:
             "SELECT COUNT(*) FROM rt_content_hot WHERE content_type = 'video'"
         )).scalar() or 0)
 
+        # ── Active users ranking (top 10 by play_count + interaction) ──
+        active_rows = db.session.execute(db.text(
+            "SELECT user_id, behavior_count, play_count, "
+            "ROUND(like_rate, 2) as like_rate, ROUND(favorite_rate, 2) as fav_rate, "
+            "ROUND(completion_rate, 2) as comp_rate, is_cold_start, region "
+            "FROM rt_user_profile "
+            "WHERE DATE(window_end) = :d "
+            "ORDER BY play_count DESC, behavior_count DESC LIMIT 10"
+        ), {"d": today_str}).fetchall()
+        active_users = [
+            {
+                "user_id": int(r[0]), "behavior_count": int(r[1] or 0),
+                "play_count": int(r[2] or 0), "like_rate": float(r[3] or 0),
+                "favorite_rate": float(r[4] or 0), "completion_rate": float(r[5] or 0),
+                "is_cold_start": bool(r[6]), "region": str(r[7] or ""),
+            }
+            for r in active_rows
+        ]
+
+        # ── Region distribution ──
+        region_rows = db.session.execute(db.text(
+            "SELECT region, COUNT(DISTINCT user_id) as cnt "
+            "FROM rt_user_profile "
+            "WHERE window_end >= DATE_SUB(NOW(), INTERVAL 24 HOUR) AND region IS NOT NULL "
+            "GROUP BY region ORDER BY cnt DESC LIMIT 15"
+        )).fetchall()
+        region_distribution = [{"name": str(r[0]), "value": int(r[1])} for r in region_rows]
+
         # ── Strategy distribution ──
         # 优先实时 rt_user_profile（反映实际用户分布），offline_recommendations 兜底
         cold_cs = int(db.session.execute(db.text(
@@ -374,7 +415,9 @@ def _fetch_dashboard_snapshot() -> dict:
         # ── Hot content Top 10 ──
         hot_top5 = db.session.execute(db.text(
             "SELECT h.content_id, h.content_type, MAX(h.hot_score) as hot_score, "
-            "COALESCE(MAX(m.title), CONCAT(IF(MAX(h.content_type)='music','音乐','视频'), ' #', MAX(h.content_id))) AS title "
+            "COALESCE(MAX(m.title), CONCAT(IF(MAX(h.content_type)='music','音乐','视频'), ' #', MAX(h.content_id))) AS title, "
+            "MAX(m.artist_or_author) as artist_or_author, MAX(m.style_or_category) as style_or_category, "
+            "MAX(m.tags) as tags, MAX(m.duration) as duration, MAX(m.language) as language, MAX(m.bpm) as bpm "
             "FROM rt_content_hot h "
             "LEFT JOIN content_metadata m ON h.content_id = m.content_id AND h.content_type = m.content_type "
             "GROUP BY h.content_id, h.content_type "
@@ -433,7 +476,12 @@ def _fetch_dashboard_snapshot() -> dict:
             "compare_data": compare_data,
 
             "hot_content_top5": [
-                {"content_id": int(r[0]), "content_type": str(r[1]), "hot_score": float(r[2]), "title": str(r[3])}
+                {
+                    "content_id": int(r[0]), "content_type": str(r[1]), "hot_score": float(r[2]),
+                    "title": str(r[3]), "artist_or_author": str(r[4] or ""),
+                    "style_or_category": str(r[5] or ""), "tags": str(r[6] or ""),
+                    "duration": float(r[7] or 0), "language": str(r[8] or ""), "bpm": float(r[9] or 0),
+                }
                 for r in hot_top5
             ],
             "cluster_distribution": [
@@ -444,6 +492,11 @@ def _fetch_dashboard_snapshot() -> dict:
                 "music": music_count,
                 "video": video_count,
             },
+            "region_distribution": [
+                {"name": str(d["name"]), "value": int(d["value"])}
+                for d in region_distribution
+            ],
+            "active_users": active_users,
             "strategy_distribution": [
                 {"name": str(d["name"]), "value": int(d["value"])}
                 for d in strategy_distribution

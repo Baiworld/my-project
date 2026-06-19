@@ -153,8 +153,15 @@ def get_content_detail(content_id):
     row = db.session.execute(
         text(
             "SELECT m.content_id, m.content_type, m.title, m.artist_or_author, "
-            "m.style_or_category, m.tags, m.duration, m.language, m.bpm "
-            "FROM content_metadata m WHERE " + " AND ".join(where) + " LIMIT 1"
+            "m.style_or_category, m.tags, m.duration, m.language, m.bpm, "
+            "MAX(h.hot_score) as hot_score, MAX(h.play_count) as play_count, "
+            "AVG(h.completion_rate) as completion_rate, AVG(h.interaction_rate) as interaction_rate, "
+            "MAX(r.score) as rec_score, MAX(r.strategy) as rec_strategy, MAX(r.reason) as rec_reason, "
+            "MAX(r.rank) as rec_rank "
+            "FROM content_metadata m "
+            "LEFT JOIN rt_content_hot h ON m.content_id = h.content_id AND m.content_type = h.content_type "
+            "LEFT JOIN offline_recommendations r ON m.content_id = r.content_id AND m.content_type = r.content_type "
+            "WHERE " + " AND ".join(where) + " LIMIT 1"
         ), params
     ).fetchone()
 
@@ -171,4 +178,12 @@ def get_content_detail(content_id):
         "duration": float(row.duration) if row.duration else 0,
         "language": row.language,
         "bpm": float(row.bpm) if row.bpm else 0,
+        "hot_score": float(row.hot_score or 0),
+        "play_count": int(row.play_count or 0),
+        "completion_rate": float(row.completion_rate or 0),
+        "interaction_rate": float(row.interaction_rate or 0),
+        "score": float(row.rec_score) if row.rec_score else None,
+        "source_strategy": row.rec_strategy,
+        "reason": row.rec_reason,
+        "source_rank": int(row.rec_rank) if row.rec_rank else None,
     }}), 200

@@ -82,6 +82,14 @@
               <option :value="100">100 条</option>
             </select>
             <button @click="executeQuery" class="btn btn-primary">查询</button>
+            <button
+              @click="toggleAutoRefresh"
+              :class="['btn', autoRefresh.enabled ? 'btn-teal' : 'btn-ghost', 'btn-sm']"
+              :title="autoRefresh.enabled ? '自动刷新中' : '开启自动刷新'"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" :class="{ 'spin-icon': autoRefresh.enabled }"><path d="M2 8a6 6 0 0111.3-3.3M14 8a6 6 0 01-11.3 3.3M14 2v4h-4M2 14v-4h4"/></svg>
+              {{ autoRefresh.enabled ? `${autoRefresh.countdown}s` : '自动' }}
+            </button>
           </div>
         </div>
       </div>
@@ -129,8 +137,17 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th v-for="col in activeColumns" :key="col.key" :class="col.align === 'right' ? 'align-right' : ''">
+                <th
+                  v-for="col in activeColumns"
+                  :key="col.key"
+                  :class="['sortable-th', col.align === 'right' ? 'align-right' : '', { 'sorted': sortColumn === col.key }]"
+                  @click="toggleSort(col)"
+                >
                   {{ col.label }}
+                  <span class="sort-arrows" v-if="isSortable(col.key)">
+                    <span class="sort-asc" :class="{ active: sortColumn === col.key && sortDirection === 'asc' }">▲</span>
+                    <span class="sort-desc" :class="{ active: sortColumn === col.key && sortDirection === 'desc' }">▼</span>
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -178,10 +195,12 @@
 
           <div v-if="queryResults.length === 0 && !loading" class="empty-state">
             <svg viewBox="0 0 48 48" fill="none" class="empty-icon"><rect x="6" y="8" width="36" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M6 16h36" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="12" r="1.5" fill="currentColor"/><circle cx="20" cy="12" r="1.5" fill="currentColor"/><circle cx="26" cy="12" r="1.5" fill="currentColor"/></svg>
-            <p>暂无数据</p>
-            <span>请设置查询条件后点击"查询"</span>
+            <p class="empty-title">暂无数据</p>
+            <span class="empty-hint">{{ emptyHintText }}</span>
+            <button v-if="!hasQueryParams" @click="executeQuery" class="btn btn-primary btn-sm" style="margin-top:12px">查询数据</button>
+            <button v-else @click="clearFilters" class="btn btn-ghost btn-sm" style="margin-top:12px">清除筛选条件</button>
           </div>
-          <div v-if="loading" class="empty-state"><p>加载中...</p></div>
+          <SkeletonTable v-if="loading" :rows="5" :cols="activeColumns.length" />
         </div>
 
         <!-- Pagination -->
@@ -227,14 +246,90 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api";
+import SkeletonTable from "@/components/common/SkeletonTable.vue";
+import { useToastStore } from "@/stores/toast";
 
 const router = useRouter();
+const toastStore = useToastStore();
 
 const activeTab = ref("recommendations");
 const loading = ref(false);
+
+// ── Sort state ──
+const sortColumn = ref("");
+const sortDirection = ref("desc");
+
+const sortableKeys = {
+  recommendations: ["score", "hot_score"],
+  content: ["hot_score", "play_count", "like_count", "favorite_count", "share_count", "completion_rate", "interaction_rate"],
+  coldstart: ["behavior_count", "play_count", "like_rate", "favorite_rate", "completion_rate"],
+};
+
+function isSortable(key) {
+  return (sortableKeys[activeTab.value] || []).includes(key);
+}
+
+function toggleSort(col) {
+  if (!isSortable(col.key)) return;
+  if (sortColumn.value === col.key) {
+    if (sortDirection.value === "desc") { sortDirection.value = "asc"; }
+    else if (sortDirection.value === "asc") { sortColumn.value = ""; sortDirection.value = "desc"; }
+  } else {
+    sortColumn.value = col.key;
+    sortDirection.value = "desc";
+  }
+  pagination.page = 1;
+  executeQuery();
+}
+
+// ── Auto-refresh ──
+const autoRefresh = reactive({ enabled: false, countdown: 10, timer: null, interval: null });
+
+function toggleAutoRefresh() {
+  autoRefresh.enabled = !autoRefresh.enabled;
+  if (autoRefresh.enabled) {
+    autoRefresh.countdown = 10;
+    autoRefresh.timer = setInterval(() => {
+      autoRefresh.countdown--;
+      if (autoRefresh.countdown <= 0) {
+        autoRefresh.countdown = 10;
+        executeQuery();
+      }
+    }, 1000);
+  } else {
+    clearInterval(autoRefresh.timer);
+    autoRefresh.timer = null;
+    autoRefresh.countdown = 10;
+  }
+}
+
+// ── Empty state ──
+const hasQueryParams = computed(() => {
+  return queryForm.keyword || queryForm.content_type || queryForm.user_id
+    || queryForm.strategy || queryForm.time_filter || (queryForm.cluster_id != null);
+});
+
+const emptyHintText = computed(() => {
+  const hints = {
+    recommendations: "尝试输入关键词搜索标题、艺人或标签",
+    content: "尝试选择内容类型或输入搜索关键词",
+    coldstart: "尝试选择时间范围或集群筛选",
+  };
+  return hints[activeTab.value] || "请设置查询条件后点击查询";
+});
+
+function clearFilters() {
+  queryForm.keyword = "";
+  queryForm.content_type = "";
+  queryForm.user_id = "";
+  queryForm.strategy = "";
+  queryForm.time_filter = "";
+  queryForm.cluster_id = null;
+  executeQuery();
+}
 const tabs = [
   { id: "recommendations", name: "推荐列表" },
   { id: "content", name: "内容管理" },
@@ -437,6 +532,10 @@ async function executeQuery() {
     if (queryForm.user_id) params.append("user_id", queryForm.user_id);
     if (queryForm.strategy && activeTab.value === "recommendations") params.append("strategy", queryForm.strategy);
     if (queryForm.sort_by) params.append("sort_by", queryForm.sort_by);
+    if (sortColumn.value) {
+      params.append("sort_column", sortColumn.value);
+      params.append("sort_order", sortDirection.value);
+    }
     if (queryForm.time_filter && activeTab.value === "coldstart") params.append("time_filter", queryForm.time_filter);
     params.append("page", String(pagination.page));
     params.append("size", String(queryForm.size));
@@ -504,8 +603,9 @@ async function exportData(format) {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+    toastStore.success(`${format.toUpperCase()} 导出成功`);
   } catch (e) {
-    console.error("导出失败:", e);
+    toastStore.error("导出失败，请稍后重试");
   }
 }
 
@@ -523,6 +623,11 @@ function goBack() {
 
 onMounted(() => {
   executeQuery();
+});
+
+onUnmounted(() => {
+  clearInterval(autoRefresh.timer);
+  clearInterval(autoRefresh.interval);
 });
 </script>
 
@@ -729,4 +834,23 @@ onMounted(() => {
 .progress-text { font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--text-secondary); width: 42px; text-align: right; }
 
 @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin-icon { animation: spin 1.5s linear infinite; }
+
+/* ── Sortable table headers ── */
+.sortable-th {
+  cursor: pointer; user-select: none; transition: color var(--duration-fast);
+}
+.sortable-th:hover { color: var(--color-primary-dark); }
+.sortable-th.sorted { color: var(--color-primary-dark); }
+.sort-arrows {
+  display: inline-flex; flex-direction: column; margin-left: 4px;
+  font-size: 8px; line-height: 1; vertical-align: middle; gap: 1px;
+  color: var(--text-tertiary);
+}
+.sort-asc.active, .sort-desc.active { color: var(--color-primary); }
+
+/* ── Empty state enhancements ── */
+.empty-title { font-size: var(--font-size-base); font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+.empty-hint { font-size: var(--font-size-xs); color: var(--text-tertiary); max-width: 320px; }
 </style>

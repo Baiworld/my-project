@@ -39,6 +39,12 @@ const routes = [
     meta: { requiresAuth: true, roles: ["admin"] },
   },
   {
+    path: "/content/:id",
+    name: "ContentDetail",
+    component: () => import("@/views/content/ContentDetail.vue"),
+    meta: { requiresAuth: true, roles: ["operator", "admin"] },
+  },
+  {
     path: "/:pathMatch(.*)*",
     redirect: "/dashboard",
   },

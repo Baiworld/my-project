@@ -154,9 +154,11 @@
                 </tr>
               </tbody>
             </table>
-            <div v-if="auditLogs.length === 0" class="empty-state" style="padding:32px">
-              <p>暂无审计记录</p>
+            <div v-if="auditLogs.length === 0 && !auditLoading" class="empty-state" style="padding:32px">
+              <p class="empty-title">暂无审计记录</p>
+              <span class="empty-hint">系统操作记录将显示在这里</span>
             </div>
+            <div v-if="auditLoading" class="empty-state" style="padding:32px"><p>加载中...</p></div>
           </div>
           <div v-if="auditPagination.total > 0" class="table-pagination" style="margin-top:12px">
             <span class="page-info">第 {{ auditPagination.page }} / {{ auditPagination.totalPages }} 页，共 {{ auditPagination.total }} 条</span>
@@ -219,8 +221,12 @@
 import { ref, reactive, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api";
+import { useConfirmStore } from "@/stores/confirm";
+import { useToastStore } from "@/stores/toast";
 
 const router = useRouter();
+const confirmStore = useConfirmStore();
+const toastStore = useToastStore();
 
 const activeTab = ref("users");
 const tabs = [
@@ -287,47 +293,66 @@ async function saveUser() {
       const payload = { username: userForm.username, email: userForm.email, role: userForm.role };
       if (userForm.password) payload.password = userForm.password;
       await api.put(`/api/users/${editingUser.value.id}`, payload);
+      toastStore.success("用户更新成功");
     } else {
       await api.post("/api/users", { ...userForm });
+      toastStore.success("用户创建成功");
     }
     closeModal();
     await loadUsers();
   } catch (error) {
-    console.error("保存用户失败:", error);
+    toastStore.error(error.response?.data?.message || "保存用户失败");
   }
 }
 
 async function toggleUserStatus(user) {
   try {
     const newStatus = user.status === "active" ? "inactive" : "active";
+    const actionLabel = newStatus === "inactive" ? "禁用" : "启用";
+    const ok = await confirmStore.open({
+      title: `${actionLabel}用户`,
+      message: `确定要${actionLabel}用户「${user.username}」吗？`,
+      confirmText: actionLabel,
+      variant: "warning",
+    });
+    if (!ok) return;
     await api.put(`/api/users/${user.id}/status`, { status: newStatus });
     user.status = newStatus;
+    toastStore.success(`用户已${actionLabel}`);
   } catch (error) {
-    console.error("更新状态失败:", error);
+    toastStore.error("更新状态失败");
   }
 }
 
 async function deleteUser(userId) {
-  if (!confirm("确定要删除该用户吗？此操作不可撤销。")) return;
+  const ok = await confirmStore.open({
+    title: "删除用户",
+    message: "确定要删除该用户吗？此操作不可撤销。",
+    confirmText: "删除",
+    variant: "danger",
+  });
+  if (!ok) return;
   try {
     await api.delete(`/api/users/${userId}`);
     users.value = users.value.filter((u) => u.id !== userId);
+    toastStore.success("用户已删除");
   } catch (error) {
-    console.error("删除用户失败:", error);
+    toastStore.error("删除用户失败");
   }
 }
 
 async function saveSettings() {
   try {
     await api.put("/api/settings", { ...settings });
-    alert("设置保存成功");
+    toastStore.success("设置保存成功");
   } catch (error) {
-    console.error("保存设置失败:", error);
+    toastStore.error("保存设置失败");
   }
 }
 
 // ── 审计日志 ──
 const auditLogs = ref([]);
+const auditLoading = ref(false);
 const auditFilter = reactive({ action: "" });
 const auditPagination = reactive({ page: 1, size: 20, total: 0, totalPages: 0 });
 
@@ -341,6 +366,7 @@ function auditActionBadge(action) {
 }
 
 async function loadAuditLogs(page = 1) {
+  auditLoading.value = true;
   try {
     const params = new URLSearchParams();
     params.append("page", page);
@@ -356,6 +382,8 @@ async function loadAuditLogs(page = 1) {
     }
   } catch (error) {
     console.error("加载审计日志失败:", error);
+  } finally {
+    auditLoading.value = false;
   }
 }
 
@@ -521,4 +549,9 @@ watch(activeTab, (tab) => {
 .modal-leave-active { transition: opacity 0.2s ease; }
 .modal-enter-from,
 .modal-leave-to { opacity: 0; }
+
+/* ── Empty state ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.empty-title { font-size: var(--font-size-base); font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+.empty-hint { font-size: var(--font-size-xs); color: var(--text-tertiary); }
 </style>

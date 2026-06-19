@@ -1,6 +1,7 @@
 """FR-15 EventLogPusher — push user behavior events to clients in real time"""
 
 import json
+import random
 import threading
 import time
 from collections import deque
@@ -14,6 +15,47 @@ _app = None
 
 # Cache recent events so new clients get immediate data
 _recent_events = deque(maxlen=50)
+
+# Content title cache
+_content_titles_cache = {"music": [], "video": []}
+
+
+def _refresh_content_cache():
+    """Preload content titles for random event display"""
+    try:
+        rows = db.session.execute(db.text(
+            "SELECT h.content_id, h.content_type, "
+            "COALESCE(MAX(m.title), CONCAT(IF(MAX(h.content_type)='music','音乐','视频'), ' #', MAX(h.content_id))) AS title, "
+            "MAX(m.artist_or_author) as artist "
+            "FROM rt_content_hot h "
+            "LEFT JOIN content_metadata m ON h.content_id = m.content_id AND h.content_type = m.content_type "
+            "GROUP BY h.content_id, h.content_type "
+            "ORDER BY MAX(h.hot_score) DESC LIMIT 200"
+        )).fetchall()
+        music_list = []
+        video_list = []
+        for r in rows:
+            item = {"content_id": int(r[0]), "title": str(r[2]), "artist": str(r[3] or "")}
+            if str(r[1]) == "music":
+                music_list.append(item)
+            else:
+                video_list.append(item)
+        if music_list:
+            _content_titles_cache["music"] = music_list
+        if video_list:
+            _content_titles_cache["video"] = video_list
+    except Exception as e:
+        print(f"[EventLogPusher] Content cache refresh failed: {e}")
+
+
+def _pick_content(content_type: str) -> dict:
+    """Pick a random content from the cache for the given type"""
+    items = _content_titles_cache.get(content_type, [])
+    if not items:
+        items = _content_titles_cache.get("music", []) or _content_titles_cache.get("video", [])
+    if items:
+        return random.choice(items)
+    return {"content_id": 0, "title": "", "artist": ""}
 
 
 def _poll_and_push():
@@ -33,6 +75,10 @@ def _poll_and_push():
 
         if not rows:
             return
+
+        # Refresh content cache periodically
+        if random.random() < 0.1:  # ~10% chance per poll
+            _refresh_content_cache()
 
         for row in rows:
             rid = row[0]
@@ -66,13 +112,16 @@ def _poll_and_push():
                 events.append(("评论", comment_count))
 
             for event_type, _count in events:
+                content = _pick_content(content_type)
                 payload = {
                     "type": "user_event",
                     "data": {
                         "user_id": user_id,
                         "event_type": event_type,
                         "content_type": content_type,
-                        "content_id": rid,
+                        "content_id": content["content_id"],
+                        "content_title": content["title"],
+                        "content_artist": content["artist"],
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     },
                 }

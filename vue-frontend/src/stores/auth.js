@@ -67,8 +67,13 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function refreshAccessToken() {
+    if (!refreshToken.value) {
+      logout();
+      return false;
+    }
     try {
-      const response = await api.auth.refresh();
+      // 用 refresh token 请求，不经过拦截器（拦截器带的是 access token）
+      const response = await api.auth.refresh(refreshToken.value);
       const payload = response.data.data;
       accessToken.value = payload.access_token;
       localStorage.setItem("accessToken", accessToken.value);

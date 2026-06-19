@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 冷启动音乐与视频混合推荐系统 — 静态模拟数据生成器
 
@@ -12,9 +12,9 @@
   user_register        data/user_register.json         用户注册事件
 
 用法:
-  python3 generate_data.py                         # 批量生成 3×10,000 条
-  python3 generate_data.py --topic user_behavior   # 仅生成指定 topic
-  python3 generate_data.py --continuous --rate 5   # 持续生成，每秒 5 条 (Ctrl+C 停止)
+  python generate_data.py                         # 批量生成 3×10,000 条
+  python generate_data.py --topic user_behavior   # 仅生成指定 topic
+  python generate_data.py --continuous --rate 5   # 持续生成，每秒 5 条 (Ctrl+C 停止)
 """
 
 import json
@@ -147,27 +147,28 @@ SOURCES = ["recommendation_feed", "recommendation_feed", "recommendation_feed",
            "search", "search", "hot_list", "related"]
 SOURCE_STRATEGIES = ["coldstart_cluster", "coldstart_cluster", "als_cf", "item2vec",
                      "hot", "hot", "dpp_rerank", "epsilon_greedy"]
-EVENT_TYPES = ["play", "play", "play", "play", "play", "play", "play", "play",
+EVENT_TYPES = ["play", "play", "play", "play", "play",
                "like", "like", "like",
-               "favorite", "favorite",
-               "skip", "skip", "skip",
-               "complete", "complete",
-               "share"]
+               "favorite", "favorite", "favorite",
+               "skip", "skip",
+               "complete", "complete", "complete",
+               "share", "share",
+               "comment", "comment"]
 
 # ============================================================================
 # 幂律分布辅助函数（模拟马太效应）
 # ============================================================================
 
-def _zipf_index(max_idx):
+def _zipf_index(max_idx: int) -> int:
     """幂律分布：小索引概率更高（模拟热门用户/内容）"""
     return min(int(abs(random.gauss(0, 1)) * max_idx * 0.25), max_idx - 1)
 
 
-def _pick(arr):
+def _pick(arr: list) -> object:
     return random.choice(arr)
 
 
-def _pick_n(arr, n):
+def _pick_n(arr: list, n: int) -> list:
     return random.sample(arr, min(n, len(arr)))
 
 
@@ -175,7 +176,7 @@ def _pick_n(arr, n):
 # 记录生成器
 # ============================================================================
 
-def generate_user_behavior(index):
+def generate_user_behavior(index: int) -> dict:
     """
     FR-01 / §5.2 — user_behavior 消息
 
@@ -209,24 +210,21 @@ def generate_user_behavior(index):
         seconds=random.randint(0, 600))  # 最近 10 分钟（实时数据）
 
     return {
-        "event_id": "evt_{}_{:06x}".format(
-            event_time.strftime("%Y%m%d%H%M%S"), index),
+        "event_id": f"evt_{event_time.strftime('%Y%m%d%H%M%S')}_{index:06x}",
         "user_id": user_id,
         "content_id": content_id,
         "content_type": "music" if is_music else "video",
         "event_type": event_type,
         "event_time": event_time.strftime("%Y-%m-%dT%H:%M:%S.") +
-                      "{:03d}Z".format(event_time.microsecond // 1000),
+                      f"{event_time.microsecond // 1000:03d}Z",
         "duration": duration,
         "progress": progress,
         "device_type": device,
         "os_version": _pick(OS_VERSIONS[device]),
         "app_version": _pick(APP_VERSIONS),
         "channel": _pick(CHANNELS),
-        "session_id": "sess_{}_{}".format(
-            int(time.time() * 1000),
-            random.randint(10000000, 99999999)),
-        "region": "CN-{}".format(REGION_CODE_MAP[_pick(REGIONS)]),
+        "session_id": f"sess_{int(time.time() * 1000)}_{random.randint(10000000, 99999999)}",
+        "region": f"CN-{REGION_CODE_MAP[_pick(REGIONS)]}",
         "source": _pick(SOURCES),
         "source_strategy": _pick(SOURCE_STRATEGIES),
         "source_rank": random.randint(1, 20),
@@ -237,7 +235,7 @@ def generate_user_behavior(index):
     }
 
 
-def generate_music_metadata(content_id):
+def generate_music_metadata(content_id: str) -> dict:
     """FR-01 / §5.2 — content_metadata 消息 (音乐)"""
     tags = _pick_n(MUSIC_TAGS, random.randint(2, 5))
     return {
@@ -251,15 +249,12 @@ def generate_music_metadata(content_id):
         "duration": round(random.uniform(120.0, 360.0), 1),
         "language": _pick(LANGUAGES),
         "bpm": round(random.uniform(60.0, 180.0), 1),
-        "release_date": "{}-{:02d}-{:02d}".format(
-            random.randint(2000, 2026),
-            random.randint(1, 12),
-            random.randint(1, 28)),
+        "release_date": f"{random.randint(2000, 2026)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
         "action": "create",
     }
 
 
-def generate_video_metadata(content_id):
+def generate_video_metadata(content_id: str) -> dict:
     """FR-01 / §5.2 — content_metadata 消息 (视频)"""
     tags = _pick_n(MUSIC_TAGS, random.randint(2, 5))
     return {
@@ -272,20 +267,17 @@ def generate_video_metadata(content_id):
         "duration": round(random.uniform(30.0, 600.0), 1),
         "language": _pick(LANGUAGES),
         "quality": _pick(VIDEO_QUALITIES),
-        "release_date": "{}-{:02d}-{:02d}".format(
-            random.randint(2018, 2026),
-            random.randint(1, 12),
-            random.randint(1, 28)),
+        "release_date": f"{random.randint(2018, 2026)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
         "action": "create",
     }
 
 
-def generate_user_register(index):
+def generate_user_register(index: int) -> dict:
     """FR-01 / §5.2 — user_register 消息"""
     user_id = USER_IDS[index]
     surname = _pick(SURNAMES)
     given = _pick(GIVEN_NAMES)
-    username = "{}{}{}".format(surname, given, random.randint(1, 9999))
+    username = f"{surname}{given}{random.randint(1, 9999)}"
     device = _pick(DEVICES)
     register_time = datetime.utcnow() - timedelta(
         seconds=random.randint(0, 86400 * 7))  # 过去 7 天（注册时间可以分散一些）
@@ -295,7 +287,7 @@ def generate_user_register(index):
         "user_id": user_id,
         "username": username,
         "register_time": register_time.strftime("%Y-%m-%dT%H:%M:%S.") +
-                         "{:03d}Z".format(register_time.microsecond // 1000),
+                         f"{register_time.microsecond // 1000:03d}Z",
         "device_type": device,
         "os_version": _pick(OS_VERSIONS[device]),
         "register_channel": _pick(CHANNELS),
@@ -310,18 +302,18 @@ def generate_user_register(index):
 # 文件生成
 # ============================================================================
 
-def write_jsonl(filename, generator, count, desc):
+def write_jsonl(filename: str, generator, count: int, desc: str):
     """将生成器产生的记录逐行写入 JSONL 文件"""
     filepath = DATA_DIR / filename
-    print("[生成] {} → {}  ({} 条)...".format(desc, filepath, count))
-    with open(str(filepath), "w", encoding="utf-8") as f:
+    print(f"[生成] {desc} → {filepath}  ({count} 条)...")
+    with open(filepath, "w", encoding="utf-8") as f:
         for i in range(count):
             record = generator(i)
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
             if (i + 1) % 2500 == 0:
-                print("  ... {}/{}".format(i + 1, count))
+                print(f"  ... {i + 1}/{count}")
     file_size = filepath.stat().st_size
-    print("[完成] {}: {} 条, {:,} bytes".format(filename, count, file_size))
+    print(f"[完成] {filename}: {count} 条, {file_size:,} bytes")
 
 
 def generate_user_behavior_file():
@@ -334,17 +326,16 @@ def generate_content_metadata_file():
     filepath = DATA_DIR / "content_metadata.json"
     music_n = 6000
     video_n = 4000
-    print("[生成] content_metadata — 内容元数据 (音乐{}+视频{}={}) → {}".format(
-        music_n, video_n, music_n + video_n, filepath))
+    print(f"[生成] content_metadata — 内容元数据 (音乐{music_n}+视频{video_n}={music_n+video_n}) → {filepath}")
 
-    with open(str(filepath), "w", encoding="utf-8") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         # 音乐元数据
         for i in range(music_n):
             cid = MUSIC_IDS[i % len(MUSIC_IDS)]
             rec = generate_music_metadata(cid)
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             if (i + 1) % 2500 == 0:
-                print("  [音乐] {}/{}".format(i + 1, music_n))
+                print(f"  [音乐] {i + 1}/{music_n}")
 
         # 视频元数据
         for i in range(video_n):
@@ -352,11 +343,10 @@ def generate_content_metadata_file():
             rec = generate_video_metadata(cid)
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             if (i + 1) % 2000 == 0:
-                print("  [视频] {}/{}".format(i + 1, video_n))
+                print(f"  [视频] {i + 1}/{video_n}")
 
     file_size = filepath.stat().st_size
-    print("[完成] content_metadata.json: {} 条, {:,} bytes".format(
-        music_n + video_n, file_size))
+    print(f"[完成] content_metadata.json: {music_n + video_n} 条, {file_size:,} bytes")
 
 
 def generate_user_register_file():
@@ -375,11 +365,91 @@ TOPIC_GENERATORS = {
 }
 
 
-def main():
-    if not DATA_DIR.exists():
-        DATA_DIR.mkdir(parents=True)
+# ============================================================================
+# 会话级行为模拟 — 更真实的用户行为序列
+# ============================================================================
 
-    # 持续生成模式: python3 generate_data.py --continuous [--rate 5]
+# 自然事件序列模式: (第一动作, 后续动作概率链)
+SESSION_PATTERNS = [
+    # 探索浏览型: 连续播放几首，可能点赞
+    ["play", "play", "play", "like"],
+    ["play", "play", "like", "play"],
+    # 深度消费型: 播放→完播→收藏
+    ["play", "complete", "favorite", "play"],
+    ["play", "complete", "complete", "share"],
+    # 快速筛选型: 播放→跳过→播放→跳过
+    ["play", "skip", "play", "skip", "play"],
+    # 互动型: 播放→点赞→评论→分享
+    ["play", "like", "comment", "share"],
+    # 简短浏览
+    ["play", "play"],
+    ["play", "skip"],
+    # 长时消费
+    ["play", "play", "complete", "like", "play", "complete"],
+]
+
+# 存量用户列表 (behavior_count > 50)
+_established_users = set()
+
+def _generate_session(index: int, is_established: bool = False) -> list[dict]:
+    """Generate a realistic session of behavior events for one user."""
+    pattern = random.choice(SESSION_PATTERNS)
+    session_id = f"sess_{int(time.time() * 1000)}_{random.randint(10000000, 99999999)}"
+    user_id = random.choice(USER_IDS) if is_established else USER_IDS[index % len(USER_IDS)]
+
+    # Established users re-use known IDs
+    if is_established and _established_users:
+        if random.random() < 0.7:
+            user_id = random.choice(list(_established_users))
+    _established_users.add(user_id)
+
+    events = []
+    for event_type in pattern:
+        is_music = random.random() < 0.6
+        content_id = (MUSIC_IDS if is_music else VIDEO_IDS)[_zipf_index(
+            len(MUSIC_IDS) if is_music else len(VIDEO_IDS))]
+
+        if is_music:
+            duration = round(random.uniform(120.0, 360.0), 1)
+        else:
+            duration = round(random.uniform(30.0, 600.0), 1)
+
+        if event_type == "complete":
+            progress = 1.0
+        elif event_type == "play":
+            progress = round(random.uniform(0.1, 0.95), 2)
+        elif event_type == "skip":
+            progress = round(random.uniform(0.0, 0.2), 2)
+        else:
+            progress = round(random.uniform(0.3, 1.0), 2)
+
+        now = datetime.utcnow()
+        events.append({
+            "event_id": f"evt_{now.strftime('%Y%m%d%H%M%S')}_{index + len(events):06x}",
+            "user_id": user_id,
+            "content_id": content_id,
+            "content_type": "music" if is_music else "video",
+            "event_type": event_type,
+            "event_time": now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z",
+            "duration": duration,
+            "progress": progress,
+            "device_type": _pick(DEVICES),
+            "os_version": _pick(OS_VERSIONS[_pick(DEVICES)]),
+            "app_version": _pick(APP_VERSIONS),
+            "channel": _pick(CHANNELS),
+            "session_id": session_id,
+            "region": f"CN-{REGION_CODE_MAP[_pick(REGIONS)]}",
+            "source": _pick(SOURCES),
+            "source_strategy": _pick(SOURCE_STRATEGIES),
+            "source_rank": random.randint(1, 20),
+        })
+    return events
+
+
+def main():
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    # 持续生成模式: python generate_data.py --continuous [--rate 5]
     if "--continuous" in sys.argv or "-c" in sys.argv:
         rate_idx = None
         if "--rate" in sys.argv:
@@ -388,17 +458,16 @@ def main():
             rate_idx = sys.argv.index("-r")
         rate_per_sec = int(sys.argv[rate_idx + 1]) if rate_idx and rate_idx + 1 < len(sys.argv) else 3
 
-        output_dir = os.environ.get("FLUME_OUTPUT_DIR", "/opt/data-generator/output")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        output_dir = os.environ.get("FLUME_OUTPUT_DIR", "/opt/data-generator-vm/output")
+        os.makedirs(output_dir, exist_ok=True)
         behavior_log = os.path.join(output_dir, "user_behavior.log")
         metadata_log = os.path.join(output_dir, "content_metadata.log")
         register_log = os.path.join(output_dir, "user_register.log")
 
-        print("[持续生成] 速率: {} 条/秒".format(rate_per_sec))
-        print("[持续生成] 写入: {}".format(behavior_log))
-        print("[持续生成] 写入: {}".format(metadata_log))
-        print("[持续生成] 写入: {}".format(register_log))
+        print(f"[持续生成] 速率: {rate_per_sec} 条/秒, 会话模式")
+        print(f"[持续生成] 写入: {behavior_log}")
+        print(f"[持续生成] 写入: {metadata_log}")
+        print(f"[持续生成] 写入: {register_log}")
         print("[持续生成] Ctrl+C 停止")
 
         user_idx = 0
@@ -407,25 +476,24 @@ def main():
         try:
             while True:
                 t_start = time.time()
-                for _ in range(rate_per_sec):
-                    # 用户行为 (主流量)
+                # ~80% 冷启动用户, 20% 存量用户
+                is_established = random.random() < 0.2
+
+                sessions_this_second = max(1, rate_per_sec // 3)
+                for _ in range(sessions_this_second):
                     user_idx += 1
-                    event = generate_user_behavior(user_idx)
-                    # 使用当前时间覆盖 event_time
-                    now = datetime.utcnow()
-                    event["event_time"] = now.strftime("%Y-%m-%dT%H:%M:%S.") + "{:03d}Z".format(now.microsecond // 1000)
-                    event["session_id"] = "sess_{}_{}".format(
-                        int(time.time() * 1000),
-                        random.randint(10000000, 99999999))
-                    with open(behavior_log, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(event, ensure_ascii=False) + "\n")
+                    # 生成一个会话中的多个事件
+                    session_events = _generate_session(user_idx, is_established)
+                    for event in session_events:
+                        with open(behavior_log, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(event, ensure_ascii=False) + "\n")
 
                     # 用户注册 (偶尔产生)
-                    if random.random() < 0.15:
+                    if random.random() < 0.12:
                         user_idx += 1
                         reg = generate_user_register(user_idx)
                         now2 = datetime.utcnow()
-                        reg["register_time"] = now2.strftime("%Y-%m-%dT%H:%M:%S.") + "{:03d}Z".format(now2.microsecond // 1000)
+                        reg["register_time"] = now2.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now2.microsecond // 1000:03d}Z"
                         with open(register_log, "a", encoding="utf-8") as f:
                             f.write(json.dumps(reg, ensure_ascii=False) + "\n")
 
@@ -433,11 +501,8 @@ def main():
                     if random.random() < 0.05:
                         music_idx += 1
                         cid = MUSIC_IDS[music_idx % len(MUSIC_IDS)]
-                        if random.random() < 0.6:
-                            meta = generate_music_metadata(cid)
-                        else:
-                            meta = generate_video_metadata(
-                                VIDEO_IDS[video_idx % len(VIDEO_IDS)])
+                        meta = generate_music_metadata(cid) if random.random() < 0.6 else generate_video_metadata(VIDEO_IDS[video_idx % len(VIDEO_IDS)])
+                        if meta["content_type"] == "video":
                             video_idx += 1
                         meta["action"] = "create"
                         with open(metadata_log, "a", encoding="utf-8") as f:
@@ -455,8 +520,7 @@ def main():
         idx = sys.argv.index("--topic")
         topic = sys.argv[idx + 1]
         if topic not in TOPIC_GENERATORS:
-            print("未知 topic: {}，可选: {}".format(
-                topic, list(TOPIC_GENERATORS.keys())))
+            print(f"未知 topic: {topic}，可选: {list(TOPIC_GENERATORS.keys())}")
             sys.exit(1)
         TOPIC_GENERATORS[topic]()
     else:
@@ -466,10 +530,10 @@ def main():
 
     print("=" * 60)
     print("全部数据文件生成完毕!")
-    print("输出目录: {}".format(DATA_DIR))
+    print(f"输出目录: {DATA_DIR}")
     for f in sorted(DATA_DIR.glob("*.json")):
-        line_count = sum(1 for _ in open(str(f), encoding="utf-8"))
-        print("  {}: {} 行".format(f.name, line_count))
+        line_count = sum(1 for _ in open(f, encoding="utf-8"))
+        print(f"  {f.name}: {line_count} 行")
 
 
 if __name__ == "__main__":

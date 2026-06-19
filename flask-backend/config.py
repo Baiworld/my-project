@@ -18,6 +18,7 @@ class Config:
         "pool_pre_ping": True,     # 每次使用前检测连接有效性
         "connect_args": {
             "connect_timeout": 5,  # 连接超时
+            "charset": "utf8mb4",   # 确保中文数据正确传输
         },
     }
 

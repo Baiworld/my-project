@@ -80,7 +80,10 @@ const api = {
     register: (username, email, password, confirmPassword) =>
       instance.post("/auth/register", { username, email, password, confirm_password: confirmPassword }),
     logout: () => instance.post("/auth/logout"),
-    refresh: () => instance.post("/auth/refresh"),
+    refresh: (refreshToken) =>
+      instance.post("/auth/refresh", {}, {
+        headers: { Authorization: `Bearer ${refreshToken}` },
+      }),
   },
   recommendations: {
     get: (params) => instance.get("/api/recommendations", { params }),
