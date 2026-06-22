@@ -1,8 +1,8 @@
-# AGENTS.md — 冷启动音乐与视频混合推荐系统
+﻿# AGENTS.md — 基于 Spark 大数据的用户行为实时分析与混合推荐系统
 
 ## 项目概述
 
-基于 Spark+AI 的冷启动音乐与视频混合推荐系统。数据生成器 → Flume → Kafka 实时接入用户行为 → Spark Streaming 实时分析 → SparkSQL 离线训练 → Flask API → Vue 数据大屏。
+基于 Spark 大数据的用户行为实时分析与混合推荐系统。数据生成器 → Flume → Kafka 实时接入用户行为 → Spark Streaming 实时分析 → SparkSQL 离线训练 → Flask API → Vue 数据大屏。
 
 ## 技术栈
 

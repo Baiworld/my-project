@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-冷启动音乐与视频混合推荐系统 — 静态模拟数据生成器
+基于 Spark 大数据的用户行为实时分析与混合推荐系统 — 静态模拟数据生成器
 
 根据业务需求文档 (FR-01) 和详细设计说明书 (§5.2) 定义的 JSON Schema，
 为 3 个 Kafka Topic 各生成 10,000 条 JSONL 数据文件：

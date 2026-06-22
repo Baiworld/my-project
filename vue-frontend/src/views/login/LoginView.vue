@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login-page">
     <!-- Animated background orbs -->
     <div class="bg-orbs">
@@ -28,8 +28,8 @@
             </defs>
           </svg>
         </div>
-        <h1>混合推荐系统</h1>
-        <p>冷启动音乐与视频智能推荐平台</p>
+        <h1>基于 Spark 大数据的用户行为实时分析与混合推荐系统</h1>
+        <p>Spark 大数据实时分析与智能推荐平台</p>
       </div>
 
       <!-- Form -->

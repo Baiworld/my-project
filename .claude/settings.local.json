@@ -113,7 +113,9 @@
       "PowerShell(Remove-)",
       "PowerShell(python E:\\\\TraeBD\\\\scripts\\\\_read_ppt.py 2>&1)",
       "PowerShell(python E:\\\\TraeBD\\\\scripts\\\\_update_ppt.py 2>&1)",
-      "PowerShell(python E:\\\\TraeBD\\\\scripts\\\\_update_ppt2.py 2>&1)"
+      "PowerShell(python E:\\\\TraeBD\\\\scripts\\\\_update_ppt2.py 2>&1)",
+      "PowerShell(git checkout *)",
+      "PowerShell(git *)"
     ]
   },
   "enabledMcpjsonServers": [

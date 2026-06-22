@@ -28,7 +28,7 @@
           </svg>
         </div>
         <h1>创建账户</h1>
-        <p>加入混合推荐系统，发现属于你的内容</p>
+        <p>加入基于 Spark 大数据的用户行为实时分析与混合推荐系统，发现属于你的内容</p>
       </div>
 
       <form @submit.prevent="handleRegister" class="register-form">

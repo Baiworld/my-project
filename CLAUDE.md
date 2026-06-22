@@ -1,10 +1,10 @@
-# CLAUDE.md — 冷启动音乐与视频混合推荐系统
+﻿# CLAUDE.md — 基于 Spark 大数据的用户行为实时分析与混合推荐系统
 
 > 版本：V1.5 / 日期：2026-06-19
 
 ## 项目概述
 
-基于 Spark+AI 的冷启动音乐与视频混合推荐系统。数据生成器 → Flume → Kafka 实时接入用户行为 → Spark Streaming 实时分析 → Flask API 实时查询 → Vue 数据大屏。SparkSQL 离线批处理生成推荐结果。
+基于 Spark 大数据的用户行为实时分析与混合推荐系统。数据生成器 → Flume → Kafka 实时接入用户行为 → Spark Streaming 实时分析 → Flask API 实时查询 → Vue 数据大屏。SparkSQL 离线批处理生成推荐结果。
 
 ## 技术栈
 

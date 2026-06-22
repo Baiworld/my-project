@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Windows 端一键启动 — Spark Streaming + Flask + Vue
 .DESCRIPTION
@@ -30,7 +30,7 @@ if ($Stop) {
 
 Write-Host ""
 Write-Host "=============================================="
-Write-Host "  冷启动混合推荐系统 — Windows 端一键启动"
+Write-Host "  基于 Spark 大数据的用户行为实时分析与混合推荐系统 — Windows 端一键启动"
 Write-Host "=============================================="
 Write-Host ""
 
